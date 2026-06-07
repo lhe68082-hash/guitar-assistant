@@ -230,7 +230,6 @@ function initChordFinder(){
   const chordNameEl=document.getElementById('chordName'),notesEl=document.getElementById('chordNotesComposition');
   const intervalsEl=document.getElementById('chordIntervals'),tagsEl=document.getElementById('chordNoteTags');
   const canvas=document.getElementById('chordCanvas'),chordSelector=document.getElementById('chordSelector');
-  const touchLayer=document.getElementById('touchLayer'); // 透明触摸层，覆盖canvas接收事件
   const reverseHint=document.getElementById('reverseHint'),modeTabs=document.getElementById('chordModeTabs');
   const scrollContainer=document.getElementById('fretboardScrollContainer'),strumHint=document.getElementById('strumHint');
   const voicingNav=document.getElementById('voicingNav'),voicingLabel=document.getElementById('voicingLabel');
@@ -381,9 +380,9 @@ function initChordFinder(){
     progTimer=setTimeout(()=>playProgChord(idx+1),interval);
   }
 
-  // ---- 坐标转换（基于touchLayer，因为事件从touchLayer来，canvas和touchLayer完全重叠） ----
+  // ---- 坐标转换 ----
   function canvasCoords(e){
-    const rect=touchLayer.getBoundingClientRect();
+    const rect=canvas.getBoundingClientRect();
     const sx=canvas.width/(rect.width||1),sy=canvas.height/(rect.height||1);
     let cx,cy;
     if(e.touches&&e.touches.length>0){cx=e.touches[0].clientX;cy=e.touches[0].clientY;}
@@ -435,14 +434,15 @@ function initChordFinder(){
 
   function handleFretTap(cx,cy){
     const{clickedString:cs,clickedFret:cf}=getStringAndFret(cx,cy);
+    console.log('handleFretTap',cx,cy,'→ string',cs,'fret',cf,'mode',currentMode);
     if(cs<0)return;
     lastTapTime=Date.now();lastTapString=cs;lastTapFret=cf;
     if(currentMode==='reverse')handleReverseTap(cs,cf);
     else if(typeof cf==='number'&&cf>=0)AudioEngine.playFretSound(cs,cf);
   }
 
-  // --- 触摸事件（绑定到透明层，绕过微信X5对canvas的拦截） ---
-  touchLayer.addEventListener('touchstart',e=>{
+  // --- 触摸事件（移动端） ---
+  canvas.addEventListener('touchstart',e=>{
     if(e.touches.length!==1)return;
     const t=e.touches[0],c=canvasCoords(t);
     ptrStartX=c.x;ptrStartY=c.y;ptrStartTime=Date.now();ptrMoved=false;ptrHorizontal=false;
@@ -450,13 +450,13 @@ function initChordFinder(){
     strumHint.classList.add('active');
   },{passive:true});
 
-  touchLayer.addEventListener('touchmove',e=>{
+  canvas.addEventListener('touchmove',e=>{
     if(!isStrumming||!touchActive||e.touches.length!==1)return;
     const t=e.touches[0],c=canvasCoords(t);
     const dx=Math.abs(c.x-ptrStartX),dy=Math.abs(c.y-ptrStartY);
     if(dx+dy>16)ptrMoved=true;
     if(dx>18&&dx>dy*1.6){ptrHorizontal=true;
-      e.preventDefault(); // 横向扫弦阻止滚动
+      e.preventDefault();
       const{clickedString}=getStringAndFret(c.x,c.y);
       if(clickedString>=0&&!strumTouched.has(clickedString)){
         const n=Date.now();if(n-strumLast>40||strumTouched.size===0){strumTouched.add(clickedString);strumLast=n;}
@@ -464,7 +464,7 @@ function initChordFinder(){
     }
   },{passive:false});
 
-  touchLayer.addEventListener('touchend',e=>{
+  canvas.addEventListener('touchend',e=>{
     if(!isStrumming||!touchActive)return;
     isStrumming=false;touchActive=false;strumHint.classList.remove('active');
     const dur=Date.now()-ptrStartTime;
@@ -480,23 +480,22 @@ function initChordFinder(){
     }
   });
 
-  touchLayer.addEventListener('touchcancel',()=>{
+  canvas.addEventListener('touchcancel',()=>{
     isStrumming=false;touchActive=false;strumHint.classList.remove('active');
     const dur=Date.now()-ptrStartTime;
-    if(dur<450){
-      handleFretTap(ptrStartX,ptrStartY);
-    }
+    if(dur<450){handleFretTap(ptrStartX,ptrStartY);}
   });
 
-  // --- Pointer事件（桌面端鼠标支持） ---
-  touchLayer.addEventListener('pointerdown',e=>{
+  // --- Pointer事件（桌面端鼠标） ---
+  canvas.addEventListener('pointerdown',e=>{
+    console.log('pointerdown',e.pointerType,e.clientX,e.clientY);
     if(touchActive)return;
     if(e.pointerType==='touch')return;
     const c=canvasCoords(e);ptrStartX=c.x;ptrStartY=c.y;ptrStartTime=Date.now();ptrMoved=false;ptrHorizontal=false;
     isStrumming=true;strumTouched.clear();strumLast=0;strumHint.classList.add('active');
   });
 
-  touchLayer.addEventListener('pointermove',e=>{
+  canvas.addEventListener('pointermove',e=>{
     if(touchActive||e.pointerType==='touch')return;
     if(!isStrumming)return;
     const c=canvasCoords(e),dx=Math.abs(c.x-ptrStartX),dy=Math.abs(c.y-ptrStartY);
@@ -509,7 +508,7 @@ function initChordFinder(){
     }
   });
 
-  touchLayer.addEventListener('pointerup',e=>{
+  canvas.addEventListener('pointerup',e=>{
     if(touchActive||e.pointerType==='touch')return;
     if(!isStrumming)return;isStrumming=false;strumHint.classList.remove('active');
     const c=canvasCoords(e);
@@ -522,16 +521,19 @@ function initChordFinder(){
     if(isTap&&dur<400)handleFretTap(c.x,c.y);
   });
 
-  touchLayer.addEventListener('click',e=>{
+  // 兜底：直接 click 事件处理
+  canvas.addEventListener('click',e=>{
+    console.log('click on canvas',e.clientX,e.clientY,Date.now());
     if(touchActive)return;
     if(e.pointerType==='touch'||e.detail===0)return;
     const dur=Date.now()-lastTapTime;
     if(dur<500&&lastTapString>=0)return;
     const c=canvasCoords(e);
+    console.log('canvasCoords:',c,{csAndFret:getStringAndFret(c.x,c.y)});
     handleFretTap(c.x,c.y);
   });
 
-  touchLayer.addEventListener('contextmenu',e=>e.preventDefault());
+  canvas.addEventListener('contextmenu',e=>e.preventDefault());
 
   function resetReverse(){reverseFrets=Array(6).fill(null);
     chordNameEl.innerHTML='<span style="color:var(--text-tertiary)">点击指板</span>';
