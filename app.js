@@ -247,7 +247,7 @@ function initChordFinder(){
   let favs=loadFavs(),progressions=loadProgs();
   let progPlaying=false,progTimer=null,progIdx=0,progBpmValI=80;
   let currentLayout={scale:1,leftMargin:38,topMargin:46,stringSpacing:44,fretHeight:42,padding:8,w:340,h:0};
-  let isStrumming=false,strumSX=0,strumSY=0,strumTouched=new Set(),strumLast=0,clickMoved=false;
+  let isStrumming=false,strumTouched=new Set(),strumLast=0;
 
   function getCanvasDims(){
     const cw=scrollContainer?scrollContainer.clientWidth-4:340,scale=Math.min(1,cw/340);
@@ -410,18 +410,18 @@ function initChordFinder(){
     });
   }
 
-  // ---- 指板触摸/点击事件（分离策略：轻点用 click，扫弦用 pointer 事件）----
-  let lastPointerDown=0;
+  // ---- 指板触摸/点击事件（统一用 pointer，pointerup 同时处理单点和扫弦）----
+  let ptrStartTime=0,ptrStartX=0,ptrStartY=0,ptrMoved=false;
   canvas.addEventListener('pointerdown',e=>{
-    const c=canvasCoords(e);strumSX=c.x;strumSY=c.y;
-    isStrumming=true;strumTouched.clear();strumLast=0;clickMoved=false;
-    lastPointerDown=Date.now();strumHint.classList.add('active');
+    const c=canvasCoords(e);ptrStartX=c.x;ptrStartY=c.y;ptrStartTime=Date.now();ptrMoved=false;
+    isStrumming=true;strumTouched.clear();strumLast=0;strumHint.classList.add('active');
+    e.preventDefault(); // 阻止浏览器默认手势
   });
   canvas.addEventListener('pointermove',e=>{
-    if(!isStrumming)return;
-    const c=canvasCoords(e),dx=Math.abs(c.x-strumSX),dy=Math.abs(c.y-strumSY);
-    if(dx+dy>8)clickMoved=true;
-    if(dx>15&&dx>dy*1.5){
+    if(!isStrumming)return;e.preventDefault();
+    const c=canvasCoords(e),dx=Math.abs(c.x-ptrStartX),dy=Math.abs(c.y-ptrStartY);
+    if(dx+dy>5)ptrMoved=true;
+    if(dx>12&&dx>dy*1.5){
       const{clickedString}=getStringAndFret(c.x,c.y);
       if(clickedString>=0&&!strumTouched.has(clickedString)){
         const n=Date.now();if(n-strumLast>40||strumTouched.size===0){strumTouched.add(clickedString);strumLast=n;}
@@ -430,31 +430,32 @@ function initChordFinder(){
   });
   canvas.addEventListener('pointerup',e=>{
     if(!isStrumming)return;isStrumming=false;strumHint.classList.remove('active');
-    // 扫弦才处理；单点放手让 click 事件来接管
-    if(strumTouched.size>=2){
-      let c;try{c=canvasCoords(e);}catch(_){return;}
-      playStrum(Array.from(strumTouched),c.y-strumSY>0?'down':'up');
+    let c;try{c=canvasCoords(e);}catch(_){return;}
+    if(strumTouched.size>=2&&ptrMoved){
+      // 扫弦
+      playStrum(Array.from(strumTouched),c.y-ptrStartY>0?'down':'up');
+    }else if(strumTouched.size<=1&&Date.now()-ptrStartTime<300){
+      // 单点：用 pointerup 坐标（比 click 更准确）
+      const{clickedString:cs,clickedFret:cf}=getStringAndFret(c.x,c.y);
+      if(cs>=0){
+        if(currentMode==='reverse'){
+          if(typeof cf==='number'&&cf>=0){
+            const cur=reverseFrets[cs];
+            if(cur===null||cur===undefined)reverseFrets[cs]=cf;
+            else if(cur===cf)reverseFrets[cs]=0;
+            else if(cur===0)reverseFrets[cs]='x';
+            else if(cur==='x')reverseFrets[cs]=null;
+            else reverseFrets[cs]=cf;
+            if(typeof reverseFrets[cs]==='number'&&reverseFrets[cs]>=0)AudioEngine.playFretSound(cs,reverseFrets[cs]);
+            renderReverseChord();
+          }
+        }else if(typeof cf==='number'&&cf>=0){AudioEngine.playFretSound(cs,cf);}
+      }
     }
   });
   canvas.addEventListener('pointercancel',()=>{isStrumming=false;strumHint.classList.remove('active');});
-  // 单击事件：处理指板推理和试听
-  canvas.addEventListener('click',e=>{
-    const elapsed=Date.now()-lastPointerDown;if(elapsed>300)return;
-    const c=canvasCoords(e),{clickedString:cs,clickedFret:cf}=getStringAndFret(c.x,c.y);
-    if(cs<0)return;
-    if(currentMode==='reverse'){
-      if(cf>=0){
-        const cur=reverseFrets[cs];
-        if(cur===null||cur===undefined)reverseFrets[cs]=cf;
-        else if(cur===cf)reverseFrets[cs]=0;
-        else if(cur===0)reverseFrets[cs]='x';
-        else if(cur==='x')reverseFrets[cs]=null;
-        else reverseFrets[cs]=cf;
-        if(typeof reverseFrets[cs]==='number'&&reverseFrets[cs]>=0)AudioEngine.playFretSound(cs,reverseFrets[cs]);
-        renderReverseChord();
-      }
-    }else if(typeof cf==='number'&&cf>=0){AudioEngine.playFretSound(cs,cf);}
-  });
+  // 阻止 canvas 上的 contextmenu
+  canvas.addEventListener('contextmenu',e=>e.preventDefault());
 
   function resetReverse(){reverseFrets=Array(6).fill(null);
     chordNameEl.innerHTML='<span style="color:var(--text-tertiary)">点击指板</span>';
@@ -621,25 +622,29 @@ function initTuner(){
   let audioCtx=null,analyser=null,micStream=null,isListening=false,animId=null,activePlayBtn=null,currentInst='guitar';
   function renderHeadstock(ik){const inst=INSTRUMENTS[ik];currentInst=ik;tunerDesc.textContent=inst.desc;leftCol.innerHTML='';rightCol.innerHTML='';const half=Math.ceil(inst.strings.length/2),ls=inst.strings.slice(0,half).reverse(),rs=inst.strings.slice(half);
     function rsHTML(s,side){const pc=side==='left'?'peg-left':'peg-right',id=side==='left'?'row-reverse':'row';
-      return`<div class="headstock-string" data-string="${s.num}" data-freq="${s.freq}"><div class="tuning-peg peg-${s.num} ${pc}"></div><div class="string-info" style="flex-direction:${id}"><span class="string-number">${'①②③④⑤⑥'.charAt(s.num-1)}</span><span class="string-note-display">${s.note}</span><span class="string-freq">${s.freq.toFixed(2)} Hz</span></div><div class="tuner-meter-horizontal"><div class="tuner-bar-track"><div class="tuner-fill" id="tunerFill${s.num}"></div></div><div class="tuner-labels"><span>♭</span><span class="center-label">·</span><span>♯</span></div></div><button class="string-play-btn" data-string="${s.num}" data-freq="${s.freq}" title="试听 ${s.note} 参考音"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="8,5 19,12 8,19"/></svg><span class="play-label">试听</span></button></div>`;}
+      return`<div class="headstock-string" data-string="${s.num}" data-freq="${s.freq}"><button class="tuning-peg peg-${s.num} ${pc}" data-string="${s.num}" data-freq="${s.freq}" title="第${s.num}弦 · ${s.note} · 点击试听参考音" aria-label="第${s.num}弦 ${s.note} 参考音"></button><div class="string-info" style="flex-direction:${id}"><span class="string-number">${'①②③④⑤⑥'.charAt(s.num-1)}</span><span class="string-note-display">${s.note}<sub>${s.octave}</sub></span><span class="string-freq">${s.freq.toFixed(2)} Hz</span></div><div class="tuner-meter-horizontal"><div class="tuner-bar-track"><div class="tuner-fill" id="tunerFill${s.num}"></div></div><div class="tuner-labels"><span>♭</span><span class="center-label">·</span><span>♯</span></div></div><button class="string-play-btn" data-string="${s.num}" data-freq="${s.freq}" title="试听 ${s.note} 参考音"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="8,5 19,12 8,19"/></svg><span class="play-label">试听</span></button></div>`;}
     ls.forEach(s=>{leftCol.innerHTML+=rsHTML(s,'left');});rs.forEach(s=>{rightCol.innerHTML+=rsHTML(s,'right');});
   }
   renderHeadstock('guitar');
 
   instrumentSelector.addEventListener('click',e=>{const btn=e.target.closest('.instrument-btn');if(!btn)return;const ik=btn.dataset.instrument;if(ik===currentInst)return;instrumentSelector.querySelectorAll('.instrument-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');stopListening();resetFills();renderHeadstock(ik);});
-  headstockBody.addEventListener('click',e=>{const row=e.target.closest('.headstock-string');if(!row)return;const freq=parseFloat(row.dataset.freq),sn=row.dataset.string;if(activePlayBtn)activePlayBtn.classList.remove('playing');const pb=row.querySelector('.string-play-btn');if(pb){pb.classList.add('playing');activePlayBtn=pb;setTimeout(()=>{pb.classList.remove('playing');if(activePlayBtn===pb)activePlayBtn=null;},2200);}AudioEngine.playTone(freq,2.2,'sine',0.35);document.querySelectorAll('.headstock-string').forEach(el=>el.classList.remove('active'));row.classList.add('active');setTimeout(()=>row.classList.remove('active'),2400);});
+  headstockBody.addEventListener('click',e=>{const row=e.target.closest('.headstock-string');if(!row)return;const freq=parseFloat(row.dataset.freq),sn=row.dataset.string;if(activePlayBtn)activePlayBtn.classList.remove('playing');const pb=row.querySelector('.string-play-btn');if(pb){pb.classList.add('playing');activePlayBtn=pb;setTimeout(()=>{pb.classList.remove('playing');if(activePlayBtn===pb)activePlayBtn=null;},2200);}AudioEngine.playTone(freq,'sine',0.35,2.2);document.querySelectorAll('.headstock-string').forEach(el=>el.classList.remove('active'));row.classList.add('active');setTimeout(()=>row.classList.remove('active'),2400);});
   micBtn.addEventListener('click',async()=>{isListening?stopListening():await startListening();});
 
-  async function startListening(){try{micStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});audioCtx=new(window.AudioContext||window.webkitAudioContext)();analyser=audioCtx.createAnalyser();analyser.fftSize=4096;analyser.smoothingTimeConstant=0.8;audioCtx.createMediaStreamSource(micStream).connect(analyser);isListening=true;micBtn.classList.add('listening');micBtn.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>停止调音';detectPitch();}catch(_){alert('无法访问麦克风，请检查浏览器权限。');}}
+  async function startListening(){try{micStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});audioCtx=new(window.AudioContext||window.webkitAudioContext)();analyser=audioCtx.createAnalyser();analyser.fftSize=4096;analyser.smoothingTimeConstant=0.5;analyser.minDecibels=-90;analyser.maxDecibels=-10;audioCtx.createMediaStreamSource(micStream).connect(analyser);isListening=true;micBtn.classList.add('listening');micBtn.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>停止调音';detectPitch();}catch(_){alert('无法访问麦克风，请检查浏览器权限。');}}
   function stopListening(){if(micStream){micStream.getTracks().forEach(t=>t.stop());micStream=null;}if(audioCtx){audioCtx.close();audioCtx=null;}if(animId){cancelAnimationFrame(animId);animId=null;}isListening=false;micBtn.classList.remove('listening');micBtn.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>开始调音';detectedFreq.textContent='-- Hz';detectedNote.textContent='轻弹琴弦即可检测';detectedNote.style.color='';resetFills();}
 
-  function autoCorrelate(buf,sr){const S=buf.length;let rms=0;for(let i=0;i<S;i++)rms+=buf[i]*buf[i];rms=Math.sqrt(rms/S);if(rms<0.01)return -1;let r1=0,r2=S-1;for(let i=0;i<S;i++){if(Math.abs(buf[i])<0.2){r1=i;break;}}for(let i=1;i<S;i++){if(Math.abs(buf[S-i])<0.2){r2=S-i;break;}}const t=buf.slice(r1,r2),c=new Array(t.length).fill(0);for(let i=0;i<c.length;i++)for(let j=0;j<c.length-i;j++)c[i]+=t[j]*t[j+i];let d=0;while(c[d]>c[d+1])d++;let mv=-1,mp=-1;for(let i=d;i<c.length;i++){if(c[i]>mv){mv=c[i];mp=i;}}let T0=mp;const x1=c[T0-1],x2=c[T0],x3=c[T0+1],a=(x1+x3-2*x2)/2,b=(x3-x1)/2;if(a&&a!==0)T0-=b/(2*a);return sr/T0;}
+  function autoCorrelate(buf,sr){const S=buf.length;let rms=0;for(let i=0;i<S;i++)rms+=buf[i]*buf[i];rms=Math.sqrt(rms/S);if(rms<0.005)return -1;let r1=0,r2=S-1;for(let i=0;i<S;i++){if(Math.abs(buf[i])<0.15){r1=i;break;}}for(let i=1;i<S;i++){if(Math.abs(buf[S-i])<0.15){r2=S-i;break;}}const t=buf.slice(r1,r2),c=new Array(t.length).fill(0);for(let i=0;i<c.length;i++)for(let j=0;j<c.length-i;j++)c[i]+=t[j]*t[j+i];let d=0;while(c[d]>c[d+1])d++;let mv=-1,mp=-1;for(let i=d;i<c.length;i++){if(c[i]>mv){mv=c[i];mp=i;}}let T0=mp;const x1=c[T0-1],x2=c[T0],x3=c[T0+1],a=(x1+x3-2*x2)/2,b=(x3-x1)/2;if(a&&a!==0)T0-=b/(2*a);return sr/T0;}
   function detectPitch(){if(!isListening||!analyser)return;const bl=analyser.fftSize,bf=new Float32Array(bl);analyser.getFloatTimeDomainData(bf);const freq=autoCorrelate(bf,audioCtx.sampleRate);
-    if(freq>30&&freq<500){detectedFreq.textContent=freq.toFixed(1)+' Hz';const A4=440,C0=A4*Math.pow(2,-4.75),hs=12*Math.log2(freq/C0),rd=Math.round(hs),ni=((rd%12)+12)%12,cts=(hs-rd)*100;const cr=Math.round(cts),dir=cr>5?'偏高 ♯':cr<-5?'偏低 ♭':'准确 ✓';detectedNote.textContent=`${NOTE_NAMES[ni]} · ${dir} · ${Math.abs(cr)}¢`;detectedNote.style.color=Math.abs(cr)<=5?'#30d158':'#ff9f0a';updFills(NOTE_NAMES[ni],cr);}
+    if(freq>30&&freq<500){detectedFreq.textContent=freq.toFixed(1)+' Hz';
+      // 八度感知弦匹配：在各目标弦的 ±1 八度范围内找最佳匹配
+      const inst=INSTRUMENTS[currentInst];let bestStr=-1,bestCents=Infinity,bestNote='';
+      for(const s of inst.strings){for(let oct=-1;oct<=1;oct++){const tf=s.freq*Math.pow(2,oct);if(tf<20||tf>600)continue;const cs=1200*Math.log2(freq/tf);if(Math.abs(cs)<Math.abs(bestCents)){bestCents=cs;bestStr=s.num;bestNote=s.note;}}}
+      const cr=Math.round(bestCents),dir=cr>5?'偏高 ♯':cr<-5?'偏低 ♭':'准确 ✓';detectedNote.textContent=`${bestNote} · ${dir} · ${Math.abs(cr)}¢`;detectedNote.style.color=Math.abs(cr)<=5?'#30d158':'#ff9f0a';updFills(bestStr,cr);}
     else{detectedFreq.textContent='-- Hz';detectedNote.textContent='轻弹琴弦即可检测';detectedNote.style.color='';resetFills();}animId=requestAnimationFrame(detectPitch);}
-  function updFills(dn,cts){resetFills();const inst=INSTRUMENTS[currentInst];let bs=-1;inst.strings.forEach(s=>{if(s.note===dn)bs=s.num;});if(bs===-1)return;const fill=document.getElementById('tunerFill'+bs);if(!fill)return;const cc=Math.max(-50,Math.min(50,cts)),pct=((cc+50)/100)*100;fill.style.width=pct+'%';
+  function updFills(sn,cts){resetFills();if(!sn||sn<0)return;const fill=document.getElementById('tunerFill'+sn);if(!fill)return;const cc=Math.max(-50,Math.min(50,cts)),pct=((cc+50)/100)*100;fill.style.width=pct+'%';
     if(Math.abs(cts)<=5)fill.className='tuner-fill in-tune';else if(cts>0)fill.className='tuner-fill sharp';else fill.className='tuner-fill flat';
-    if(Math.abs(cts)<=5){const se=document.querySelector(`.headstock-string[data-string="${bs}"]`);if(se)se.classList.add('active');}}
+    if(Math.abs(cts)<=5){const se=document.querySelector(`.headstock-string[data-string="${sn}"]`);if(se)se.classList.add('active');}}
   function resetFills(){const inst=INSTRUMENTS[currentInst];inst.strings.forEach(s=>{const f=document.getElementById('tunerFill'+s.num);if(f){f.style.width='50%';f.className='tuner-fill';}});document.querySelectorAll('.headstock-string').forEach(el=>el.classList.remove('active'));}
   window.addEventListener('beforeunload',()=>stopListening());
 }

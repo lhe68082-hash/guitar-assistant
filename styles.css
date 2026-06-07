@@ -520,7 +520,7 @@ body::before {
     display: block;
     filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.3));
     pointer-events: auto;
-    touch-action: manipulation; /* 允许轻点+手势，不拦截click */
+    touch-action: none; /* 禁止浏览器接管触摸，全部交给 JS */
     max-width: 100%;
 }
 
@@ -719,6 +719,19 @@ body::before {
     max-width: 170px;
 }
 
+/* 琴头操作提示 */
+.headstock-hint {
+    text-align: center;
+    font-size: 0.55rem;
+    color: var(--text-quaternary);
+    margin-top: 6px;
+    font-weight: 500;
+}
+
+.headstock-hint strong {
+    color: var(--text-tertiary);
+}
+
 /* 中间琴颈装饰 */
 .headstock-neck {
     display: flex;
@@ -784,21 +797,24 @@ body::before {
     border-color: rgba(48, 209, 88, 0.3);
 }
 
-/* 弦钮旋钮 */
+/* 弦钮旋钮 - 可点击试听参考音 */
 .tuning-peg {
-    width: 22px;
-    height: 22px;
+    width: 28px;
+    height: 28px;
     border-radius: 50%;
     flex-shrink: 0;
     position: relative;
-    transition: transform var(--duration-fast) var(--spring);
+    transition: all var(--duration-fast) var(--spring);
+    border: 1.5px solid rgba(255,255,255,0.15);
+    cursor: pointer;
+    outline: none;
 }
 
 .tuning-peg::after {
     content: "";
-    width: 10px;
-    height: 2.5px;
-    background: rgba(255,255,255,0.5);
+    width: 12px;
+    height: 3px;
+    background: rgba(255,255,255,0.6);
     border-radius: 2px;
     position: absolute;
     top: 50%;
@@ -816,7 +832,13 @@ body::before {
 }
 
 .tuning-peg:hover {
-    transform: rotate(30deg);
+    transform: rotate(25deg) scale(1.12);
+    border-color: rgba(255,255,255,0.35);
+    box-shadow: 0 2px 12px rgba(255,255,255,0.15);
+}
+
+.tuning-peg:active {
+    transform: rotate(40deg) scale(0.93);
 }
 
 .tuning-peg.peg-6 { background: linear-gradient(135deg, #8B7355, #C4A46C); }
@@ -851,21 +873,29 @@ body::before {
 
 /* 弦号标签 */
 .string-number {
-    font-size: 0.68rem;
+    font-size: 0.85rem;
     color: var(--text-tertiary);
-    min-width: 16px;
+    min-width: 22px;
     text-align: center;
     font-weight: 700;
+    line-height: 1;
 }
 
 /* 音符显示 */
 .string-note-display {
-    font-size: 0.95rem;
+    font-size: 1.05rem;
     font-weight: 700;
     color: var(--text-primary);
-    min-width: 24px;
+    min-width: 30px;
     text-align: center;
     letter-spacing: -0.3px;
+}
+
+.string-note-display sub {
+    font-size: 0.55rem;
+    font-weight: 500;
+    color: var(--text-quaternary);
+    vertical-align: sub;
 }
 
 /* 频率显示 */
