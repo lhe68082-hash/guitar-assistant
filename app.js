@@ -447,15 +447,14 @@ function initChordFinder(){
     ptrStartX=c.x;ptrStartY=c.y;ptrStartTime=Date.now();ptrMoved=false;ptrHorizontal=false;
     touchActive=true;isStrumming=true;strumTouched.clear();strumLast=0;
     strumHint.classList.add('active');
-    // 不preventDefault，让浏览器正常处理后续scroll判断
   },{passive:true});
 
   canvas.addEventListener('touchmove',e=>{
     if(!isStrumming||!touchActive||e.touches.length!==1)return;
     const t=e.touches[0],c=canvasCoords(t);
     const dx=Math.abs(c.x-ptrStartX),dy=Math.abs(c.y-ptrStartY);
-    if(dx+dy>6)ptrMoved=true;
-    if(dx>14&&dx>dy*1.8){ptrHorizontal=true;
+    if(dx+dy>16)ptrMoved=true; // 阈值加大，避免手指轻微抖动误触
+    if(dx>18&&dx>dy*1.6){ptrHorizontal=true;
       e.preventDefault(); // 横向扫弦阻止滚动
       const{clickedString}=getStringAndFret(c.x,c.y);
       if(clickedString>=0&&!strumTouched.has(clickedString)){
@@ -468,24 +467,26 @@ function initChordFinder(){
     if(!isStrumming||!touchActive)return;
     isStrumming=false;touchActive=false;strumHint.classList.remove('active');
     const dur=Date.now()-ptrStartTime;
+    // 安全获取changedTouches（某些浏览器touchend中touches已空）
+    const ct=(e.changedTouches&&e.changedTouches.length>0)?e.changedTouches[0]:null;
+    const c=ct?canvasCoords(ct):{x:ptrStartX,y:ptrStartY};
     // 横向扫弦
     if(strumTouched.size>=2&&ptrHorizontal){
-      const ct=e.changedTouches[0],c=canvasCoords(ct);
       playStrum(Array.from(strumTouched),c.y-ptrStartY>0?'down':'up');
       return;
     }
-    // 轻点判定：没移动 或 移动极小，持续时间短
-    if((!ptrMoved||(ptrMoved&&dur<300))&&dur<500){
-      const ct=e.changedTouches[0],c=canvasCoords(ct);
+    // 轻点判定：总移动距离小 且 时间短（不依赖ptrMoved状态，因为微信X5可能不触发touchmove）
+    const totalDx=Math.abs(c.x-ptrStartX),totalDy=Math.abs(c.y-ptrStartY);
+    if(totalDx+totalDy<36&&dur<450){
       handleFretTap(c.x,c.y);
     }
   });
 
   canvas.addEventListener('touchcancel',()=>{
     isStrumming=false;touchActive=false;strumHint.classList.remove('active');
-    // touchcancel后也尝试处理轻点（使用起始位置）
     const dur=Date.now()-ptrStartTime;
-    if(!ptrHorizontal&&strumTouched.size<=1&&dur<500){
+    // touchcancel也尝试处理轻点（微信X5常在短时触摸后触发cancel）
+    if(dur<450){
       handleFretTap(ptrStartX,ptrStartY);
     }
   });

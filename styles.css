@@ -520,7 +520,10 @@ body::before {
     display: block;
     filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.3));
     pointer-events: auto;
-    touch-action: pan-y; /* 允许纵向滚动穿透到滚动容器，横向手势由 JS 处理 */
+    touch-action: manipulation; /* 微信 X5 内核中 pan-y 会吞掉 touchend，用 manipulation 保证轻点可用 */
+    -webkit-touch-callout: none; /* 阻止微信长按弹出菜单 */
+    user-select: none;
+    -webkit-user-select: none;
     max-width: 100%;
 }
 
