@@ -312,19 +312,19 @@ body::before {
 .chord-selector {
     display: flex;
     flex-direction: column;
-    gap: 4px;
-    margin-bottom: 4px;
+    gap: 3px;
+    margin-bottom: 3px;
     flex-shrink: 0;
 }
 
 .select-group label {
     display: block;
-    font-size: 0.58rem;
+    font-size: 0.52rem;
     color: var(--text-tertiary);
-    margin-bottom: 3px;
+    margin-bottom: 1px;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.6px;
+    letter-spacing: 0.4px;
 }
 
 /* 修复：note-btn 不再使用 ::after 覆盖层 */
@@ -335,16 +335,17 @@ body::before {
 }
 
 .note-btn {
-    height: 26px;
+    height: 22px;
     border: none;
     background: var(--fill-secondary);
     color: var(--text-secondary);
-    border-radius: 5px;
-    font-size: 0.65rem;
+    border-radius: 4px;
+    font-size: 0.58rem;
     font-weight: 600;
     cursor: pointer;
     transition: all var(--duration-fast) var(--ease-out);
     position: relative;
+    min-height: 0;
 }
 
 .note-btn:hover {
@@ -356,26 +357,27 @@ body::before {
     background: var(--blue);
     color: #ffffff;
     font-weight: 700;
-    box-shadow: 0 1px 8px var(--blue-glow);
+    box-shadow: 0 1px 6px var(--blue-glow);
 }
 
 .chord-type-buttons {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 3px;
+    gap: 2px;
 }
 
 .type-btn {
-    padding: 5px 3px;
+    padding: 3px 2px;
     border: none;
     background: var(--fill-secondary);
     color: var(--text-secondary);
-    border-radius: 5px;
-    font-size: 0.6rem;
+    border-radius: 4px;
+    font-size: 0.55rem;
     font-weight: 500;
     cursor: pointer;
     transition: all var(--duration-fast) var(--ease-out);
     line-height: 1.2;
+    min-height: 0;
 }
 
 .type-btn:hover {
@@ -387,7 +389,7 @@ body::before {
     background: var(--purple);
     color: #ffffff;
     font-weight: 600;
-    box-shadow: 0 2px 12px var(--purple-glow);
+    box-shadow: 0 1px 8px var(--purple-glow);
 }
 
 /* 和弦展示区 */
@@ -1812,17 +1814,17 @@ body::before {
     }
 
     .note-btn {
-        height: 26px;
-        font-size: 0.62rem;
+        height: 22px;
+        font-size: 0.56rem;
     }
 
     .chord-type-buttons {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(4, 1fr);
     }
 
     .type-btn {
-        font-size: 0.6rem;
-        padding: 5px 3px;
+        font-size: 0.52rem;
+        padding: 3px 2px;
     }
 
     .bpm-value {
@@ -1985,8 +1987,8 @@ body::before {
     }
 
     .note-btn {
-        height: 28px;
-        font-size: 0.68rem;
+        height: 24px;
+        font-size: 0.6rem;
     }
 
     .chord-type-buttons {
@@ -1994,8 +1996,8 @@ body::before {
     }
 
     .type-btn {
-        font-size: 0.62rem;
-        padding: 6px 4px;
+        font-size: 0.55rem;
+        padding: 4px 2px;
     }
 
     .bpm-value {
@@ -2193,9 +2195,9 @@ body::before {
 
 /* 触摸设备全局优化 */
 @media (hover: none) and (pointer: coarse) {
-    /* 增大触摸目标 */
-    .note-btn, .type-btn, .nav-tab, .chord-mode-tab {
-        min-height: 44px; /* iOS HIG 推荐的最小触摸目标 */
+    /* 增大触摸目标（和弦按钮保持紧凑，不强制 44px）*/
+    .nav-tab, .chord-mode-tab {
+        min-height: 40px;
     }
 
     .bpm-btn, .string-play-btn {
