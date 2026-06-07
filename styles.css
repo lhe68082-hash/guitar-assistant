@@ -1319,6 +1319,413 @@ body::before {
     background-color: var(--fill-primary);
 }
 
+/* ============ 指型导航栏 ============ */
+.voicing-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin: 6px 0;
+    flex-shrink: 0;
+    padding: 4px 0;
+}
+
+.voicing-arrow {
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: var(--fill-secondary);
+    color: var(--text-secondary);
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--duration-fast) var(--ease-out);
+    flex-shrink: 0;
+}
+
+.voicing-arrow:hover {
+    background: var(--fill-primary);
+    color: var(--text-primary);
+    transform: scale(1.08);
+}
+
+.voicing-arrow:active {
+    transform: scale(0.93);
+}
+
+.voicing-arrow:disabled {
+    opacity: 0.25;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.voicing-label {
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    min-width: 32px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+}
+
+.voicing-dots {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    margin: 0 4px;
+}
+
+.voicing-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--fill-primary);
+    cursor: pointer;
+    transition: all var(--duration-fast) var(--ease-out);
+}
+
+.voicing-dot.active {
+    background: var(--blue);
+    box-shadow: 0 0 8px var(--blue-glow);
+    transform: scale(1.4);
+}
+
+/* ============ 收藏按钮 ============ */
+.fav-btn {
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: var(--fill-secondary);
+    color: var(--text-secondary);
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--duration-fast) var(--ease-out);
+    flex-shrink: 0;
+}
+
+.fav-btn:hover {
+    background: var(--fill-primary);
+    transform: scale(1.08);
+}
+
+.fav-btn:active {
+    transform: scale(0.93);
+}
+
+/* ============ 收藏夹列表 ============ */
+.fav-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 6px;
+    flex-shrink: 0;
+    justify-content: center;
+}
+
+.fav-empty {
+    font-size: 0.58rem;
+    color: var(--text-quaternary);
+    font-weight: 500;
+}
+
+.fav-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 4px 10px;
+    border: 0.5px solid var(--separator);
+    background: var(--fill-secondary);
+    color: var(--text-secondary);
+    font-size: 0.62rem;
+    font-weight: 600;
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    transition: all var(--duration-fast) var(--ease-out);
+    font-family: inherit;
+}
+
+.fav-chip:hover {
+    background: var(--fill-primary);
+    color: var(--text-primary);
+    border-color: var(--blue);
+    box-shadow: 0 1px 6px var(--blue-glow);
+}
+
+.fav-remove {
+    font-size: 0.85rem;
+    color: var(--text-quaternary);
+    line-height: 1;
+    margin-left: 1px;
+    transition: color var(--duration-fast) var(--ease-out);
+}
+
+.fav-chip:hover .fav-remove {
+    color: var(--red);
+}
+
+/* ============ 音阶类型选择 ============ */
+.scale-type-row {
+    flex-shrink: 0;
+    margin: 4px 0;
+}
+
+.scale-type-btns {
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+.scale-type-btn {
+    padding: 4px 10px;
+    border: none;
+    background: var(--fill-secondary);
+    color: var(--text-tertiary);
+    font-size: 0.6rem;
+    font-weight: 600;
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    transition: all var(--duration-fast) var(--ease-out);
+    font-family: inherit;
+}
+
+.scale-type-btn:hover {
+    background: var(--fill-primary);
+    color: var(--text-secondary);
+}
+
+.scale-type-btn.active {
+    background: var(--teal);
+    color: #000;
+    font-weight: 700;
+    box-shadow: 0 2px 8px var(--teal-glow);
+}
+
+/* ============ 和弦进行播放器 ============ */
+.prog-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    width: 100%;
+    padding: 6px 0;
+    border: none;
+    background: transparent;
+    color: var(--text-tertiary);
+    font-size: 0.62rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--duration-fast) var(--ease-out);
+    flex-shrink: 0;
+    font-family: inherit;
+    margin-top: 4px;
+}
+
+.prog-toggle:hover {
+    color: var(--text-secondary);
+}
+
+.prog-toggle svg {
+    transition: transform var(--duration-normal) var(--ease-out);
+}
+
+.prog-panel {
+    flex-shrink: 0;
+    background: var(--fill-secondary);
+    border-radius: var(--radius-md);
+    padding: 8px 10px;
+    margin-top: 4px;
+    transition: all var(--duration-normal) var(--ease-out);
+    overflow: hidden;
+}
+
+.prog-panel.collapsed {
+    display: none;
+}
+
+.prog-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-bottom: 6px;
+    min-height: 20px;
+    justify-content: center;
+}
+
+.prog-empty {
+    font-size: 0.56rem;
+    color: var(--text-quaternary);
+    font-weight: 500;
+}
+
+.prog-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 9px;
+    background: var(--fill-primary);
+    color: var(--text-secondary);
+    font-size: 0.62rem;
+    font-weight: 600;
+    border-radius: var(--radius-full);
+    transition: all var(--duration-fast) var(--ease-out);
+}
+
+.prog-chip.active {
+    background: var(--blue);
+    color: #fff;
+    box-shadow: 0 2px 10px var(--blue-glow);
+    animation: progBeat 0.3s ease-out;
+}
+
+@keyframes progBeat {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.15); }
+    100% { transform: scale(1); }
+}
+
+.prog-remove {
+    border: none;
+    background: transparent;
+    color: var(--text-quaternary);
+    font-size: 0.85rem;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0;
+    transition: color var(--duration-fast) var(--ease-out);
+    font-family: inherit;
+}
+
+.prog-chip:hover .prog-remove {
+    color: var(--red);
+}
+
+.prog-controls {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.prog-add-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 5px 12px;
+    border: 1px dashed var(--separator);
+    background: transparent;
+    color: var(--text-tertiary);
+    font-size: 0.6rem;
+    font-weight: 600;
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    transition: all var(--duration-fast) var(--ease-out);
+    font-family: inherit;
+}
+
+.prog-add-btn:hover {
+    border-color: var(--teal);
+    color: var(--teal);
+    background: rgba(100, 210, 255, 0.06);
+}
+
+.prog-play-btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: var(--blue);
+    color: #fff;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--duration-fast) var(--ease-out);
+    flex-shrink: 0;
+}
+
+.prog-play-btn:hover {
+    transform: scale(1.08);
+    box-shadow: 0 2px 12px var(--blue-glow);
+}
+
+.prog-play-btn:active {
+    transform: scale(0.93);
+}
+
+.prog-play-btn.running {
+    background: var(--pink);
+    box-shadow: 0 2px 12px var(--pink-glow);
+}
+
+.prog-bpm {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.prog-bpm-slider {
+    width: 56px;
+    height: 3px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: var(--fill-primary);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+}
+
+.prog-bpm-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #fff;
+    cursor: pointer;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+.prog-bpm-val {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    min-width: 20px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+}
+
+.prog-bpm-label {
+    font-size: 0.52rem;
+    color: var(--text-quaternary);
+    font-weight: 600;
+}
+
+.prog-clear-btn {
+    padding: 4px 10px;
+    border: none;
+    background: transparent;
+    color: var(--text-quaternary);
+    font-size: 0.6rem;
+    font-weight: 500;
+    cursor: pointer;
+    border-radius: var(--radius-full);
+    transition: all var(--duration-fast) var(--ease-out);
+    font-family: inherit;
+}
+
+.prog-clear-btn:hover {
+    color: var(--red);
+    background: rgba(255, 69, 58, 0.08);
+}
+
 /* ============ 响应式适配 ============ */
 
 /* 小屏手机 (iPhone SE / 320-374px) */
@@ -1459,6 +1866,40 @@ body::before {
 
     .strum-hint {
         font-size: 0.55rem;
+    }
+
+    .voicing-arrow {
+        width: 26px;
+        height: 26px;
+    }
+
+    .voicing-dots {
+        gap: 3px;
+    }
+
+    .voicing-dot {
+        width: 5px;
+        height: 5px;
+    }
+
+    .scale-type-btn {
+        padding: 3px 7px;
+        font-size: 0.55rem;
+    }
+
+    .prog-chip {
+        font-size: 0.58rem;
+        padding: 2px 7px;
+    }
+
+    .prog-add-btn {
+        padding: 4px 8px;
+        font-size: 0.55rem;
+    }
+
+    .prog-play-btn {
+        width: 28px;
+        height: 28px;
     }
 }
 

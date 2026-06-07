@@ -7,8 +7,9 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#000000">
     <meta name="format-detection" content="telephone=no">
+    <link rel="manifest" href="manifest.json">
     <title>吉他学习助手</title>
-    <link rel="stylesheet" href="styles.css?v=2">
+    <link rel="stylesheet" href="styles.css?v=3">
 </head>
 <body>
     <!-- Vibe Coding 手势动画层 -->
@@ -79,6 +80,7 @@
                     <div class="chord-mode-tabs" id="chordModeTabs">
                         <button class="chord-mode-tab active" data-mode="query">查询和弦</button>
                         <button class="chord-mode-tab" data-mode="reverse">指板推理</button>
+                        <button class="chord-mode-tab" data-mode="scale">音阶指型</button>
                     </div>
 
                     <div class="chord-selector" id="chordSelector">
@@ -123,6 +125,32 @@
                         </div>
                     </div>
                     <div class="strum-hint" id="strumHint">↕ 滑动指板浏览更多品位 · 水平拖拽扫弦</div>
+                    <!-- 指型导航 + 收藏 -->
+                    <div class="voicing-nav" id="voicingNav">
+                        <button class="voicing-arrow" id="voicingPrev" aria-label="上一个指型">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+                        </button>
+                        <span class="voicing-label" id="voicingLabel">1/5</span>
+                        <button class="voicing-arrow" id="voicingNext" aria-label="下一个指型">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+                        </button>
+                        <div class="voicing-dots" id="voicingDots"></div>
+                        <button class="fav-btn" id="favBtn" aria-label="收藏和弦">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <!-- 音阶类型选择 -->
+                    <div class="scale-type-row" id="scaleTypeRow" style="display:none">
+                        <div class="scale-type-btns" id="scaleTypeBtns">
+                            <button class="scale-type-btn active" data-scale="major">大调</button>
+                            <button class="scale-type-btn" data-scale="minor">小调</button>
+                            <button class="scale-type-btn" data-scale="majPenta">大五声</button>
+                            <button class="scale-type-btn" data-scale="minPenta">小五声</button>
+                            <button class="scale-type-btn" data-scale="blues">布鲁斯</button>
+                        </div>
+                    </div>
                         <div class="chord-note-tags" id="chordNoteTags">
                             <span class="chord-note-tag root">C</span>
                             <span class="chord-note-tag third">E</span>
@@ -137,6 +165,34 @@
                                 <span class="info-label">音程关系</span>
                                 <span class="info-value" id="chordIntervals">根音 · 大三度 · 纯五度</span>
                             </div>
+                        </div>
+                    <!-- 收藏夹 -->
+                    <div class="fav-list" id="favList">
+                        <span class="fav-empty">暂无收藏，点击 ♡ 添加</span>
+                    </div>
+                    <!-- 和弦进行播放器 -->
+                    <button class="prog-toggle" id="progToggle">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+                        和弦进行
+                    </button>
+                    <div class="prog-panel collapsed" id="progPanel">
+                        <div class="prog-list" id="progList">
+                            <span class="prog-empty">点击下方 +加入进行 来构建和弦进行</span>
+                        </div>
+                        <div class="prog-controls">
+                            <button class="prog-add-btn" id="progAdd" title="加入进行">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                加入进行
+                            </button>
+                            <button class="prog-play-btn" id="progPlay">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="8,5 19,12 8,19"/></svg>
+                            </button>
+                            <div class="prog-bpm">
+                                <input type="range" class="prog-bpm-slider" id="progBpm" min="40" max="200" value="80">
+                                <span class="prog-bpm-val" id="progBpmVal">80</span>
+                                <span class="prog-bpm-label">BPM</span>
+                            </div>
+                            <button class="prog-clear-btn" id="progClear">清空</button>
                         </div>
                     </div>
                 </div>
@@ -271,6 +327,6 @@
         </main>
     </div>
 
-    <script src="app.js?v=2"></script>
+    <script src="app.js?v=3"></script>
 </body>
 </html>
