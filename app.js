@@ -1,43 +1,4 @@
-// ============ 吉他学习助手 v4 - 多指型 + 收藏 + 进行 + 音阶 + PWA ============
-// ==================== 密码验证 ====================
-(function checkPassword() {
-    var PASS_KEY = 'guitar_helper_auth';
-    if (localStorage.getItem(PASS_KEY) === 'ok') return;
-
-    var overlay = document.getElementById('passwordOverlay');
-    var input = document.getElementById('passwordInput');
-    var btn = document.getElementById('passwordSubmit');
-    var err = document.getElementById('passwordError');
-
-    // 在这里修改你的密码
-    var CORRECT = '0000';
-
-    if (!overlay || !input || !btn || !err) return;
-
-    overlay.classList.remove('hidden');
-
-    function tryUnlock() {
-        var val = input.value.trim();
-        if (val === CORRECT) {
-            err.classList.remove('show');
-            localStorage.setItem(PASS_KEY, 'ok');
-            overlay.classList.add('hidden');
-        } else {
-            err.textContent = '密码错误，请重试';
-            err.classList.add('show');
-            input.value = '';
-            input.focus();
-        }
-    }
-
-    btn.addEventListener('click', tryUnlock);
-    input.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') tryUnlock();
-    });
-
-    input.focus();
-})();
-
+// ============ 花生吉他学习助手 v4 - 多指型 + 收藏 + 进行 + 音阶 + PWA ============
 (function () { "use strict";
 
 // ==================== 常量 ====================
