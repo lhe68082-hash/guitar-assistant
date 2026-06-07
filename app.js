@@ -10,7 +10,7 @@
     const err = document.getElementById('passwordError');
 
     // 在这里修改你的密码（默认: guitar2024）
-    const CORRECT = 'guitar2024';
+    const CORRECT = '0000';
 
     function tryUnlock() {
         const val = input.value.trim();
