@@ -1104,8 +1104,7 @@ body::before {
     text-align: center;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    justify-content: flex-start;
-    padding-top: 4px;
+    justify-content: center;
 }
 
 .metronome-display {
@@ -1117,11 +1116,11 @@ body::before {
     align-items: baseline;
     justify-content: center;
     gap: 8px;
-    margin-bottom: 8px;
+    margin-bottom: 18px;
 }
 
 .bpm-value {
-    font-size: 6.5rem;
+    font-size: 7.5rem;
     font-weight: 200;
     background: linear-gradient(180deg, var(--text-primary) 0%, var(--teal) 100%);
     -webkit-background-clip: text;
@@ -1825,8 +1824,12 @@ body::before {
     }
 
     .bpm-value {
-        font-size: 4.2rem;
+        font-size: 5rem;
         letter-spacing: -2px;
+    }
+
+    .bpm-display {
+        margin-bottom: 14px;
     }
 
     .chord-name-display {
@@ -1994,7 +1997,11 @@ body::before {
     }
 
     .bpm-value {
-        font-size: 4.5rem;
+        font-size: 5.6rem;
+    }
+
+    .bpm-display {
+        margin-bottom: 16px;
     }
 
     .headstock-string {
@@ -2135,7 +2142,11 @@ body::before {
     }
 
     .bpm-value {
-        font-size: 3.6rem;
+        font-size: 4.4rem;
+    }
+
+    .bpm-display {
+        margin-bottom: 12px;
     }
 
     .metronome-display {
