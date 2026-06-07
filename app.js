@@ -236,8 +236,7 @@ function initChordFinder(){
   const voicingPrev=document.getElementById('voicingPrev'),voicingNext=document.getElementById('voicingNext');
   const voicingDots=document.getElementById('voicingDots');
   const favBtn=document.getElementById('favBtn'),favList=document.getElementById('favList');
-  const scaleToggle=document.getElementById('scaleToggle'),scaleTypeRow=document.getElementById('scaleTypeRow');
-  const scaleTypeBtns=document.getElementById('scaleTypeBtns');
+  const scaleTypeRow=document.getElementById('scaleTypeRow'),scaleTypeBtns=document.getElementById('scaleTypeBtns');
   const progToggle=document.getElementById('progToggle'),progPanel=document.getElementById('progPanel');
   const progList=document.getElementById('progList'),progAdd=document.getElementById('progAdd');
   const progPlay=document.getElementById('progPlay'),progBpm=document.getElementById('progBpm');
@@ -248,7 +247,7 @@ function initChordFinder(){
   let favs=loadFavs(),progressions=loadProgs();
   let progPlaying=false,progTimer=null,progIdx=0,progBpmValI=80;
   let currentLayout={scale:1,leftMargin:38,topMargin:46,stringSpacing:44,fretHeight:42,padding:8,w:340,h:0};
-  let isStrumming=false,strumSX=0,strumSY=0,strumCX=0,strumCY=0,strumTouched=new Set(),strumLast=0,clickMoved=false;
+  let isStrumming=false,strumSX=0,strumSY=0,strumTouched=new Set(),strumLast=0,clickMoved=false;
 
   function getCanvasDims(){
     const cw=scrollContainer?scrollContainer.clientWidth-4:340,scale=Math.min(1,cw/340);
@@ -264,14 +263,33 @@ function initChordFinder(){
   initCanvas();
   if(window.ResizeObserver&&scrollContainer){new ResizeObserver(()=>{const nl=getCanvasDims();if(Math.abs(nl.w-currentLayout.w)>2){initCanvas();doRender();}}).observe(scrollContainer);}
 
-  // ---- 模式切换 ----
+  // ---- 模式切换（统一管理 UI 元素显示/隐藏）----
+  function setMode(mode){
+    currentMode=mode;
+    modeTabs.querySelectorAll('.chord-mode-tab').forEach(t=>t.classList.toggle('active',t.dataset.mode===mode));
+    if(mode==='query'){
+      chordSelector.style.display='';reverseHint.style.display='none';
+      voicingNav.style.display='';favBtn.style.display='';favList.style.display='';
+      scaleTypeRow.style.display='none';showScale=false;
+      reverseFrets=Array(6).fill(null);voicingIdx=0;
+      doRender();
+    }else if(mode==='reverse'){
+      chordSelector.style.display='none';reverseHint.style.display='';
+      voicingNav.style.display='none';favBtn.style.display='none';favList.style.display='none';
+      scaleTypeRow.style.display='none';showScale=false;
+      reverseFrets=Array(6).fill(null);resetReverse();
+      drawFretboard(reverseFrets,{name:'点击指板'});
+    }else if(mode==='scale'){
+      chordSelector.style.display='none';reverseHint.style.display='none';
+      voicingNav.style.display='none';favBtn.style.display='none';favList.style.display='none';
+      scaleTypeRow.style.display='';showScale=true;
+      reverseFrets=Array(6).fill(null);
+      doRender();
+    }
+  }
   modeTabs.addEventListener('click',e=>{
     const tab=e.target.closest('.chord-mode-tab');if(!tab)return;
-    modeTabs.querySelectorAll('.chord-mode-tab').forEach(t=>t.classList.remove('active'));tab.classList.add('active');
-    currentMode=tab.dataset.mode;
-    if(currentMode==='query'){chordSelector.style.display='';reverseHint.style.display='none';reverseFrets=Array(6).fill(null);showScale=false;updateScaleUI();doRender();}
-    else if(currentMode==='reverse'){chordSelector.style.display='none';reverseHint.style.display='';resetReverse();showScale=false;updateScaleUI();drawFretboard(reverseFrets,{name:'点击指板'});}
-    else if(currentMode==='scale'){chordSelector.style.display='none';reverseHint.style.display='none';reverseFrets=Array(6).fill(null);showScale=true;updateScaleUI();doRender();}
+    setMode(tab.dataset.mode);
   });
 
   // ---- 根音选择 ----
@@ -298,14 +316,12 @@ function initChordFinder(){
   // ---- 指型导航 ----
   voicingPrev.addEventListener('click',()=>{if(voicingIdx>0){voicingIdx--;renderVoicing();}});
   voicingNext.addEventListener('click',()=>{if(voicingIdx<allVoicings.length-1){voicingIdx++;renderVoicing();}});
-  
-  // 指板滑动切换指型
   canvas.addEventListener('wheel',e=>{if(Math.abs(e.deltaX)>Math.abs(e.deltaY))e.preventDefault();},{passive:false});
 
   // ---- 收藏 ----
   favBtn.addEventListener('click',()=>{toggleFav();});
   function toggleFav(){
-    const key=selRoot+'|'+selType;const idx=favs.findIndex(f=>f.root===selRoot&&f.type===selType);
+    const idx=favs.findIndex(f=>f.root===selRoot&&f.type===selType);
     if(idx>=0)favs.splice(idx,1);else favs.unshift({root:selRoot,type:selType,name:selRoot+(CHORD_DEFS[selType].sn||'')});
     if(favs.length>20)favs.pop();saveFavs(favs);updateFavBtn();renderFavs();
   }
@@ -318,21 +334,14 @@ function initChordFinder(){
     selRoot=btn.dataset.root;selType=btn.dataset.type;voicingIdx=0;
     rootNotesEl.querySelectorAll('.note-btn').forEach(b=>b.classList.toggle('active',b.dataset.note===selRoot));
     chordTypesEl.querySelectorAll('.type-btn').forEach(b=>b.classList.toggle('active',b.dataset.type===selType));
-    if(currentMode!=='query'){currentMode='query';modeTabs.querySelectorAll('.chord-mode-tab').forEach(t=>t.classList.toggle('active',t.dataset.mode==='query'));chordSelector.style.display='';reverseHint.style.display='none';showScale=false;updateScaleUI();}
-    doRender();
+    if(currentMode!=='query')setMode('query');
+    else doRender();
   });
   function renderFavs(){
     if(favs.length===0){favList.innerHTML='<span class="fav-empty">暂无收藏，点击 ♡ 添加</span>';return;}
     favList.innerHTML=favs.map((f,i)=>`<button class="fav-chip" data-root="${f.root}" data-type="${f.type}">${f.name}<span class="fav-remove" data-idx="${i}">&times;</span></button>`).join('');
     favList.querySelectorAll('.fav-remove').forEach(rm=>rm.addEventListener('click',e=>{e.stopPropagation();const idx=parseInt(rm.dataset.idx);favs.splice(idx,1);saveFavs(favs);renderFavs();updateFavBtn();}));
   }
-
-  // ---- 音阶开关 ----
-  scaleToggle.addEventListener('click',()=>{
-    if(currentMode!=='scale'){currentMode='scale';chordSelector.style.display='none';reverseHint.style.display='none';showScale=true;modeTabs.querySelectorAll('.chord-mode-tab').forEach(t=>t.classList.toggle('active',t.dataset.mode==='scale'));updateScaleUI();doRender();}
-    else{currentMode='query';chordSelector.style.display='';reverseHint.style.display='none';showScale=false;modeTabs.querySelectorAll('.chord-mode-tab').forEach(t=>t.classList.toggle('active',t.dataset.mode==='query'));updateScaleUI();doRender();}
-  });
-  function updateScaleUI(){scaleTypeRow.style.display=showScale?'':'none';scaleToggle.classList.toggle('active',showScale);}
 
   // ---- 和弦进行播放器 ----
   progToggle.addEventListener('click',()=>{progPanel.classList.toggle('collapsed');});
@@ -401,16 +410,34 @@ function initChordFinder(){
     });
   }
 
-  // ---- 事件 ----
-  canvas.addEventListener('pointerdown',e=>{const c=canvasCoords(e);strumSX=c.x;strumSY=c.y;strumCX=c.x;strumCY=c.y;isStrumming=true;strumTouched.clear();strumLast=0;clickMoved=false;strumHint.classList.add('active');});
-  canvas.addEventListener('pointermove',e=>{if(!isStrumming)return;const c=canvasCoords(e),dx=Math.abs(c.x-strumSX),dy=Math.abs(c.y-strumSY);if(dx+dy>8)clickMoved=true;if(dx>20&&dx>dy*1.5){e.preventDefault();strumCX=c.x;strumCY=c.y;const{clickedString}=getStringAndFret(c.x,c.y);if(clickedString>=0&&!strumTouched.has(clickedString)){const n=Date.now();if(n-strumLast>40||strumTouched.size===0){strumTouched.add(clickedString);strumLast=n;}}}});
-  canvas.addEventListener('pointerup',e=>{if(!isStrumming)return;isStrumming=false;strumHint.classList.remove('active');let c;try{c=canvasCoords(e);}catch(_){return;}finishInteraction(c);try{canvas.releasePointerCapture(e.pointerId);}catch(_){}});
-  canvas.addEventListener('touchstart',e=>{if(isStrumming)return;const t=e.touches[0],c=canvasCoords(t);strumSX=c.x;strumSY=c.y;strumCX=c.x;strumCY=c.y;isStrumming=true;strumTouched.clear();strumLast=0;clickMoved=false;strumHint.classList.add('active');},{passive:true});
-  canvas.addEventListener('touchmove',e=>{if(!isStrumming)return;const t=e.touches[0],c=canvasCoords(t),dx=Math.abs(c.x-strumSX),dy=Math.abs(c.y-strumSY);if(dx+dy>8)clickMoved=true;if(dx>20&&dx>dy*1.5){e.preventDefault();strumCX=c.x;strumCY=c.y;const{clickedString}=getStringAndFret(c.x,c.y);if(clickedString>=0&&!strumTouched.has(clickedString)){const n=Date.now();if(n-strumLast>40||strumTouched.size===0){strumTouched.add(clickedString);strumLast=n;}}}},{passive:false});
-  canvas.addEventListener('touchend',e=>{if(!isStrumming)return;isStrumming=false;strumHint.classList.remove('active');let c;try{c=canvasCoords(e);}catch(_){return;}finishInteraction(c);});
+  // ---- 指板触摸/点击事件（仅用 Pointer 事件，兼容鼠标+触屏，避免重复触发）----
+  canvas.addEventListener('pointerdown',e=>{
+    const c=canvasCoords(e);strumSX=c.x;strumSY=c.y;
+    isStrumming=true;strumTouched.clear();strumLast=0;clickMoved=false;
+    strumHint.classList.add('active');
+    canvas.setPointerCapture(e.pointerId);
+  });
+  canvas.addEventListener('pointermove',e=>{
+    if(!isStrumming)return;e.preventDefault();
+    const c=canvasCoords(e),dx=Math.abs(c.x-strumSX),dy=Math.abs(c.y-strumSY);
+    if(dx+dy>8)clickMoved=true;
+    if(dx>20&&dx>dy*1.5){
+      const{clickedString}=getStringAndFret(c.x,c.y);
+      if(clickedString>=0&&!strumTouched.has(clickedString)){
+        const n=Date.now();if(n-strumLast>40||strumTouched.size===0){strumTouched.add(clickedString);strumLast=n;}
+      }
+    }
+  });
+  canvas.addEventListener('pointerup',e=>{
+    if(!isStrumming)return;isStrumming=false;strumHint.classList.remove('active');
+    let c;try{c=canvasCoords(e);}catch(_){return;}
+    finishInteraction(c);
+    try{canvas.releasePointerCapture(e.pointerId);}catch(_){}
+  });
+  canvas.addEventListener('pointercancel',()=>{isStrumming=false;strumHint.classList.remove('active');});
 
   function finishInteraction(c){
-    if(strumTouched.size>=2){const dy=strumCY-strumSY,dir=dy>0?'down':'up';playStrum(Array.from(strumTouched),dir);}
+    if(strumTouched.size>=2){const dy=c.y-strumSY,dir=dy>0?'down':'up';playStrum(Array.from(strumTouched),dir);}
     else if(!clickMoved||strumTouched.size===1){const{clickedString,clickedFret}=getStringAndFret(c.x,c.y);if(clickedString>=0)handleClick(clickedString,clickedFret);}
   }
   function handleClick(cs,cf){
@@ -466,16 +493,11 @@ function initChordFinder(){
     const scale=SCALES[selScale];const rootST=NOTE_SEMITONE[selRoot];
     const scaleNotes=scale.notes.map(s=>NOTE_NAMES[(rootST+s)%12]);
     const scaleNoteSet=new Set(scaleNotes);
-    // 生成指板标记：显示所有音阶音
-    const shape=Array(6).fill(null);
-    // 渲染音阶在指板上的图
     const displayName=selRoot+' '+scale.name;
     chordNameEl.innerHTML=`<span style="color:var(--teal)">${displayName}</span>`;
     notesEl.textContent=scaleNotes.join(' · ');intervalsEl.textContent='点击指板试听音阶音';
     tagsEl.innerHTML='';
-    voicingLabel.textContent='';voicingPrev.style.display='none';voicingNext.style.display='none';voicingDots.innerHTML='';
     drawScaleOnFretboard(scaleNotes,scaleNoteSet,rootST,selRoot);
-    updateFavBtn();
   }
 
   function renderReverseChord(){
