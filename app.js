@@ -415,18 +415,30 @@ function initChordFinder(){
     });
   }
 
-  // ---- 指板触摸/点击事件（touch-action:pan-y 让纵向滚动穿透，JS只处理横向扫弦+轻点）----
+  // ---- 指板触摸/点击事件（touch-action:pan-y + click 兜底）----
   let ptrStartTime=0,ptrStartX=0,ptrStartY=0,ptrMoved=false,ptrHorizontal=false;
+  let lastTapTime=0,lastTapString=-1,lastTapFret=-1; // 防 click 重复触发
+
+  function handleReverseTap(cs,cf){
+    if(typeof cf!=='number'||cf<0)return;
+    const cur=reverseFrets[cs];
+    if(cur===null||cur===undefined)reverseFrets[cs]=cf;
+    else if(cur===cf)reverseFrets[cs]=0;
+    else if(cur===0)reverseFrets[cs]='x';
+    else if(cur==='x')reverseFrets[cs]=null;
+    else reverseFrets[cs]=cf;
+    if(typeof reverseFrets[cs]==='number'&&reverseFrets[cs]>=0)AudioEngine.playFretSound(cs,reverseFrets[cs]);
+    renderReverseChord();
+  }
+
   canvas.addEventListener('pointerdown',e=>{
     const c=canvasCoords(e);ptrStartX=c.x;ptrStartY=c.y;ptrStartTime=Date.now();ptrMoved=false;ptrHorizontal=false;
     isStrumming=true;strumTouched.clear();strumLast=0;strumHint.classList.add('active');
-    // 不调 preventDefault —— 让浏览器能正常识别纵向滚动
   });
   canvas.addEventListener('pointermove',e=>{
     if(!isStrumming)return;
     const c=canvasCoords(e),dx=Math.abs(c.x-ptrStartX),dy=Math.abs(c.y-ptrStartY);
     if(dx+dy>6)ptrMoved=true;
-    // 仅当明显为横向拖拽时才收集弦号（纵向留给浏览器滚动）
     if(dx>14&&dx>dy*1.8){ptrHorizontal=true;
       const{clickedString}=getStringAndFret(c.x,c.y);
       if(clickedString>=0&&!strumTouched.has(clickedString)){
@@ -440,50 +452,42 @@ function initChordFinder(){
     const dur=Date.now()-ptrStartTime,totalDx=Math.abs(c.x-ptrStartX),totalDy=Math.abs(c.y-ptrStartY);
     const isTap=!ptrMoved||(totalDx+totalDy)<10;
     if(strumTouched.size>=2&&ptrHorizontal){
-      // 横向扫弦
       playStrum(Array.from(strumTouched),c.y-ptrStartY>0?'down':'up');
-    }else if(isTap&&dur<400){
-      // 判定为轻点（非滚动手势）
+      return;
+    }
+    if(isTap&&dur<400){
       const{clickedString:cs,clickedFret:cf}=getStringAndFret(c.x,c.y);
       if(cs>=0){
-        if(currentMode==='reverse'){
-          if(typeof cf==='number'&&cf>=0){
-            const cur=reverseFrets[cs];
-            if(cur===null||cur===undefined)reverseFrets[cs]=cf;
-            else if(cur===cf)reverseFrets[cs]=0;
-            else if(cur===0)reverseFrets[cs]='x';
-            else if(cur==='x')reverseFrets[cs]=null;
-            else reverseFrets[cs]=cf;
-            if(typeof reverseFrets[cs]==='number'&&reverseFrets[cs]>=0)AudioEngine.playFretSound(cs,reverseFrets[cs]);
-            renderReverseChord();
-          }
-        }else if(typeof cf==='number'&&cf>=0){AudioEngine.playFretSound(cs,cf);}
+        lastTapTime=Date.now();lastTapString=cs;lastTapFret=cf;
+        if(currentMode==='reverse')handleReverseTap(cs,cf);
+        else if(typeof cf==='number'&&cf>=0)AudioEngine.playFretSound(cs,cf);
       }
     }
   });
   canvas.addEventListener('pointercancel',()=>{
-    // 浏览器接管了手势（比如开始纵向滚动了），正常退出
     isStrumming=false;strumHint.classList.remove('active');
-    // 如果是轻微移动后 cancel，当成一次轻点处理
     const dur=Date.now()-ptrStartTime;
-    if(!ptrHorizontal&&strumTouched.size<=1&&dur<350&&ptrMoved&&ptrStartY>0){
+    // 放宽条件：任何非扫弦、非长按的短时操作都可能是一次轻点
+    if(!ptrHorizontal&&strumTouched.size<=1&&dur<500){
       const cx=ptrStartX,cy=ptrStartY;
       const{clickedString:cs,clickedFret:cf}=getStringAndFret(cx,cy);
       if(cs>=0){
-        if(currentMode==='reverse'){
-          if(typeof cf==='number'&&cf>=0){
-            const cur=reverseFrets[cs];
-            if(cur===null||cur===undefined)reverseFrets[cs]=cf;
-            else if(cur===cf)reverseFrets[cs]=0;
-            else if(cur===0)reverseFrets[cs]='x';
-            else if(cur==='x')reverseFrets[cs]=null;
-            else reverseFrets[cs]=cf;
-            if(typeof reverseFrets[cs]==='number'&&reverseFrets[cs]>=0)AudioEngine.playFretSound(cs,reverseFrets[cs]);
-            renderReverseChord();
-          }
-        }else if(typeof cf==='number'&&cf>=0)AudioEngine.playFretSound(cs,cf);
+        lastTapTime=Date.now();lastTapString=cs;lastTapFret=cf;
+        if(currentMode==='reverse')handleReverseTap(cs,cf);
+        else if(typeof cf==='number'&&cf>=0)AudioEngine.playFretSound(cs,cf);
       }
     }
+  });
+  // click 兜底：任何 pointer 事件没覆盖的干净轻点
+  canvas.addEventListener('click',e=>{
+    const dur=Date.now()-lastTapTime;
+    // 如果 pointer 事件已经处理过（500ms内同位置），跳过避免重复
+    const c=canvasCoords(e);
+    if(dur<500&&lastTapString>=0)return;
+    const{clickedString:cs,clickedFret:cf}=getStringAndFret(c.x,c.y);
+    if(cs<0)return;
+    if(currentMode==='reverse')handleReverseTap(cs,cf);
+    else if(typeof cf==='number'&&cf>=0)AudioEngine.playFretSound(cs,cf);
   });
   canvas.addEventListener('contextmenu',e=>e.preventDefault());
 
@@ -534,10 +538,12 @@ function initChordFinder(){
     chordNameEl.innerHTML=`<span style="color:var(--teal)">${displayName}</span>`;
     notesEl.textContent=scaleNotes.join(' · ');intervalsEl.textContent='前6品指型 · 轻点试听 · 上下滑动浏览';
     tagsEl.innerHTML='';
-    // 音阶模式：重算布局，只显示前6品，每格更大
+    // 音阶模式：重算布局，只显示前6品，每格更大确保可滚动
     const cw=scrollContainer?scrollContainer.clientWidth-4:340;const sc=Math.min(1,cw/340);
-    const lm=Math.round(38*sc),tm=Math.round(48*sc),ss=Math.round(44*sc),fh=Math.round(54*sc),pd=Math.round(8*sc);
-    currentLayout={scale:sc,leftMargin:lm,topMargin:tm,stringSpacing:ss,fretHeight:fh,padding:pd,w:cw,h:tm+SCALE_FRETS*fh+28};
+    const lm=Math.round(38*sc),tm=Math.round(50*sc),ss=Math.round(44*sc),fh=Math.round(70*sc),pd=Math.round(8*sc);
+    // 确保画布高度足够溢出滚动容器（至少550px），让上下滑动生效
+    const minH=Math.max(tm+SCALE_FRETS*fh+40, 550);
+    currentLayout={scale:sc,leftMargin:lm,topMargin:tm,stringSpacing:ss,fretHeight:fh,padding:pd,w:cw,h:minH};
     canvas.width=currentLayout.w;canvas.height=currentLayout.h;
     canvas.style.width=currentLayout.w+'px';canvas.style.height=currentLayout.h+'px';
     drawScaleOnFretboard(scaleNotes,scaleNoteSet,rootST,selRoot);
