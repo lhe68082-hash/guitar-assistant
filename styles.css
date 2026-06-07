@@ -217,10 +217,7 @@ body::before {
     font-size: 1.1rem;
     font-weight: 700;
     letter-spacing: -0.3px;
-    background: linear-gradient(135deg, var(--text-primary) 30%, var(--teal) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: var(--text-primary);
 }
 
 @keyframes logoPulse {
@@ -367,7 +364,7 @@ body::before {
 .chord-type-buttons {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 5px;
+    gap: 6px;
 }
 
 .type-btn {
@@ -481,7 +478,7 @@ body::before {
     user-select: none;
     -webkit-user-select: none;
     -webkit-tap-highlight-color: transparent;
-    min-height: 0;
+    min-height: 200px;
     -ms-overflow-style: none;
 }
 
@@ -506,7 +503,8 @@ body::before {
     display: flex;
     justify-content: center;
     position: relative;
-    /* 不设 pointer-events:none，让触摸层正常接收事件 */
+    padding: 8px 0;
+    min-height: 180px;
 }
 
 .chord-diagram-container canvas {
@@ -518,6 +516,7 @@ body::before {
     user-select: none;
     -webkit-user-select: none;
     max-width: 100%;
+    min-height: 160px;
 }
 
 /* 扫弦提示 */
