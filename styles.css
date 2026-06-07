@@ -607,11 +607,12 @@ body::before {
     text-align: center;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    justify-content: center;
+    justify-content: flex-start;
+    padding-top: 4px;
 }
 
 .tuner-header {
-    margin-bottom: 20px;
+    margin-bottom: 12px;
 }
 
 .tuner-header h2 {
@@ -717,7 +718,7 @@ body::before {
     display: flex;
     flex-direction: column;
     gap: 4px;
-    max-width: 170px;
+    max-width: none;
 }
 
 /* 琴头操作提示 */
@@ -855,7 +856,7 @@ body::before {
     align-items: center;
     gap: 4px;
     min-width: 0;
-    flex: 1;
+    flex: 0 0 auto;
 }
 
 /* 左列：文本靠右（靠近琴颈） */
@@ -880,6 +881,7 @@ body::before {
     text-align: center;
     font-weight: 700;
     line-height: 1;
+    flex-shrink: 0;
 }
 
 /* 音符显示 */
@@ -890,6 +892,7 @@ body::before {
     min-width: 30px;
     text-align: center;
     letter-spacing: -0.3px;
+    flex-shrink: 0;
 }
 
 .string-note-display sub {
@@ -1103,11 +1106,12 @@ body::before {
     text-align: center;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    justify-content: center;
+    justify-content: flex-start;
+    padding-top: 4px;
 }
 
 .metronome-display {
-    margin-bottom: 24px;
+    margin-bottom: 16px;
 }
 
 .bpm-display {
@@ -1823,7 +1827,7 @@ body::before {
     }
 
     .bpm-value {
-        font-size: 3.6rem;
+        font-size: 3.8rem;
         letter-spacing: -2px;
     }
 
@@ -1855,8 +1859,7 @@ body::before {
     }
 
     .string-freq {
-        font-size: 0.52rem;
-        min-width: 40px;
+        display: none;
     }
 
     .string-play-btn {
@@ -1895,8 +1898,8 @@ body::before {
     }
 
     .beat-dot {
-        width: 22px;
-        height: 22px;
+        width: 28px;
+        height: 28px;
     }
 
     .bpm-btn {
@@ -2022,6 +2025,7 @@ body::before {
 @media (min-width: 601px) {
     .app-container {
         padding: 0 24px 0;
+        max-width: 720px;
     }
 
     /* 调音器桌面端优化 */
@@ -2130,7 +2134,7 @@ body::before {
     }
 
     .bpm-value {
-        font-size: 2.5rem;
+        font-size: 3.2rem;
     }
 
     .metronome-display {
@@ -2139,6 +2143,11 @@ body::before {
 
     .beat-visual {
         margin-bottom: 8px;
+    }
+
+    .beat-dot {
+        width: 26px;
+        height: 26px;
     }
 
     .panel-inner {
