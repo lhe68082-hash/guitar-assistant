@@ -55,29 +55,139 @@ const AudioEngine = {
   }
 };
 
-// ==================== 和弦引擎 ====================
+// ==================== 和弦引擎（CAGED 系统） ====================
 const VoicingCache = {};
 function getChordNotes(root,type){const rs=NOTE_SEMITONE[root];return CHORD_DEFS[type].st.map(s=>NOTE_NAMES[(rs+s)%12]);}
-function fretOnString(noteName,si,maxFret=15){const ns=NOTE_SEMITONE[noteName],os=STR_OPEN_MIDI[si]%12;let f=(ns-os+12)%12;const p=[];while(f<=maxFret){p.push(f);f+=12;}return p;}
 
-function computeVoicings(root,type){
-  const key=root+'|'+type;if(VoicingCache[key])return VoicingCache[key];
-  const notes=getChordNotes(root,type),MAX=15;
-  const opts=[[],[],[],[],[],[]];
-  for(let s=0;s<6;s++){opts[s].push(null);const seen=new Set();
-    for(const n of notes){for(const f of fretOnString(n,s,MAX)){if(!seen.has(f)){seen.add(f);opts[s].push({fret:f,note:n});}}}
+// CAGED 五个把位原型 - 每个都是常见开放和弦在该调中的标准按法
+// frets: [6弦, 5弦, 4弦, 3弦, 2弦, 1弦], null=静音
+const CAGED_PROTOTYPES = {
+  major: [
+    { name:'C型', nativeRoot:'C', frets:[null,3,2,0,1,0] },   // 开放C和弦
+    { name:'A型', nativeRoot:'A', frets:[null,0,2,2,2,0] },   // 开放A和弦
+    { name:'G型', nativeRoot:'G', frets:[3,2,0,0,0,3] },     // 开放G和弦
+    { name:'E型', nativeRoot:'E', frets:[0,2,2,1,0,0] },     // 开放E和弦
+    { name:'D型', nativeRoot:'D', frets:[null,null,0,2,3,2] }, // 开放D和弦
+  ],
+  minor: [
+    { name:'Am型', nativeRoot:'A', frets:[null,0,2,2,1,0] },
+    { name:'Em型', nativeRoot:'E', frets:[0,2,2,0,0,0] },
+    { name:'Dm型', nativeRoot:'D', frets:[null,null,0,2,3,1] },
+    // C大调形状降3度 → 小调
+    { name:'Cm型', nativeRoot:'C', frets:[null,3,1,0,1,3] },
+    { name:'Gm型', nativeRoot:'G', frets:[3,1,0,0,3,3] },
+  ],
+  '7': [
+    { name:'C7型', nativeRoot:'C', frets:[null,3,2,3,1,0] },
+    { name:'A7型', nativeRoot:'A', frets:[null,0,2,0,2,0] },
+    { name:'G7型', nativeRoot:'G', frets:[3,2,0,0,0,1] },
+    { name:'E7型', nativeRoot:'E', frets:[0,2,0,1,0,0] },
+    { name:'D7型', nativeRoot:'D', frets:[null,null,0,2,1,2] },
+  ],
+  maj7: [
+    { name:'Cmaj7型', nativeRoot:'C', frets:[null,3,2,0,0,0] },
+    { name:'Amaj7型', nativeRoot:'A', frets:[null,0,2,1,2,0] },
+    { name:'Gmaj7型', nativeRoot:'G', frets:[3,2,0,0,0,2] },
+    { name:'Emaj7型', nativeRoot:'E', frets:[0,2,1,1,0,0] },
+    { name:'Dmaj7型', nativeRoot:'D', frets:[null,null,0,2,2,2] },
+  ],
+  m7: [
+    { name:'Am7型', nativeRoot:'A', frets:[null,0,2,0,1,0] },
+    { name:'Em7型', nativeRoot:'E', frets:[0,2,0,0,0,0] },
+    { name:'Dm7型', nativeRoot:'D', frets:[null,null,0,2,1,1] },
+    { name:'Cm7型', nativeRoot:'C', frets:[null,3,1,3,1,3] },
+    { name:'Gm7型', nativeRoot:'G', frets:[3,1,0,0,3,1] },
+  ],
+  dim: [
+    { name:'Adim型', nativeRoot:'A', frets:[null,0,1,2,1,2] },
+    { name:'Edim型', nativeRoot:'E', frets:[null,null,0,1,0,1] },
+    { name:'Ddim型', nativeRoot:'D', frets:[null,null,0,1,0,1] },
+    { name:'Gdim型', nativeRoot:'G', frets:[3,4,5,3,5,3] },
+    { name:'Cdim型', nativeRoot:'C', frets:[null,3,4,5,4,5] },
+  ],
+  aug: [
+    { name:'Caug型', nativeRoot:'C', frets:[null,3,2,1,1,0] },
+    { name:'Aaug型', nativeRoot:'A', frets:[null,0,2,2,2,1] },
+    { name:'Eaug型', nativeRoot:'E', frets:[0,2,2,1,3,0] },
+    { name:'Gaug型', nativeRoot:'G', frets:[3,2,1,0,0,3] },
+    { name:'Daug型', nativeRoot:'D', frets:[null,null,0,2,3,3] },
+  ],
+  sus4: [
+    { name:'Csus4型', nativeRoot:'C', frets:[null,3,3,0,1,1] },
+    { name:'Asus4型', nativeRoot:'A', frets:[null,0,2,2,3,0] },
+    { name:'Esus4型', nativeRoot:'E', frets:[0,2,2,2,0,0] },
+    { name:'Dsus4型', nativeRoot:'D', frets:[null,null,0,2,3,3] },
+    { name:'Gsus4型', nativeRoot:'G', frets:[3,3,0,0,1,3] },
+  ],
+};
+
+function computeVoicings(root, type) {
+  const key = root + '|' + type;
+  if (VoicingCache[key]) return VoicingCache[key];
+
+  const shapes = CAGED_PROTOTYPES[type];
+  if (!shapes) { VoicingCache[key] = []; return []; }
+
+  const rootST = NOTE_SEMITONE[root];
+  const results = [];
+
+  for (const shape of shapes) {
+    // 计算需要移动的半音数
+    const nativeST = NOTE_SEMITONE[shape.nativeRoot];
+    let offset = (rootST - nativeST + 12) % 12;
+
+    // 尝试 offset 和 offset+12，找到第一个有效的
+    const candidates = [offset, offset + 12];
+    for (const o of candidates) {
+      const frets = shape.frets.map(f => (f === null ? null : f + o));
+      const active = frets.filter(f => f !== null);
+      if (active.length < 3) continue;
+
+      const minF = Math.min(...active);
+      const maxF = Math.max(...active);
+
+      // 过滤：品位不能太高、跨度不能太大
+      if (minF < 0 || maxF > 15) continue;
+      if (maxF - minF > 5) continue;
+
+      results.push({ name: shape.name, frets: frets });
+      break; // 找到有效位置就停止
+    }
   }
-  const results=[],ns=new Set(notes);
-  function dfs(i,v,cov){if(i===6){const a=v.filter(f=>f!==null&&f>0);if(a.length<3)return;const mn=Math.min(...a),mx=Math.max(...a);if(mx-mn>5)return;if(!notes.every(n=>cov.has(n)))return;results.push([...v]);return;}
-    for(const o of opts[i]){v[i]=o?o.fret:null;const nc=new Set(cov);if(o&&o.note)nc.add(o.note);dfs(i+1,v,nc);if(results.length>=60)return;}}
-  dfs(0,Array(6).fill(null),new Set());
-  const uniq=[],se=new Set();
-  for(const v of results){const k=v.map(f=>f===null?'x':f).join(',');if(!se.has(k)){se.add(k);uniq.push(v);}}
-  uniq.sort((a,b)=>{const ma=Math.min(...a.filter(f=>f!==null&&f>0).concat(99)),mb=Math.min(...b.filter(f=>f!==null&&f>0).concat(99));if(ma!==mb)return ma-mb;return b.filter(f=>f!==null).length-a.filter(f=>f!==null).length;});
-  const sel=[],up=new Set();
-  for(const v of uniq){const a=v.filter(f=>f!==null&&f>0),mn=a.length?Math.min(...a):0,pk=Math.floor(mn/3);if(!up.has(pk)||sel.length<3){sel.push(v);up.add(pk);}if(sel.length>=5)break;}
-  while(sel.length<5){for(const v of uniq){if(!sel.includes(v)){sel.push(v);break;}}if(sel.length===1||sel.every((sv,i)=>i===0||sel[i-1]!==v))break;}
-  VoicingCache[key]=sel.slice(0,5);return VoicingCache[key];
+
+  // 如果不足5个，尝试 offset-12（往低把位走）来补
+  if (results.length < 5) {
+    const usedNames = new Set(results.map(r => r.name));
+    for (const shape of shapes) {
+      if (results.length >= 5) break;
+      if (usedNames.has(shape.name)) continue;
+      const nativeST = NOTE_SEMITONE[shape.nativeRoot];
+      let offset = (rootST - nativeST + 12) % 12;
+      offset -= 12; // 往低把位
+      const frets = shape.frets.map(f => (f === null ? null : f + offset));
+      const active = frets.filter(f => f !== null);
+      if (active.length < 3) continue;
+      const minF = Math.min(...active), maxF = Math.max(...active);
+      if (minF < 0 || maxF > 15 || maxF - minF > 5) continue;
+      results.push({ name: shape.name, frets: frets });
+    }
+  }
+
+  // 去重并排序（按最低品位从低到高）
+  const seen = new Set();
+  const unique = [];
+  for (const r of results) {
+    const k = r.frets.map(f => (f === null ? 'x' : f)).join(',');
+    if (!seen.has(k)) { seen.add(k); unique.push(r); }
+  }
+  unique.sort((a, b) => {
+    const ma = Math.min(...a.frets.filter(f => f !== null));
+    const mb = Math.min(...b.frets.filter(f => f !== null));
+    return ma - mb;
+  });
+
+  VoicingCache[key] = unique.slice(0, 5);
+  return VoicingCache[key];
 }
 
 function getNotesFromIntervals(root,st){const rn=NOTE_SEMITONE[root];return st.map(s=>NOTE_NAMES[(rn+s)%12]);}
@@ -245,11 +355,10 @@ function initChordFinder(){
   function playProgChord(idx){
     if(!progPlaying||idx>=progressions.length){stopProg();return;}
     progIdx=idx;
-    const p=progressions[idx],shape=VoicingCache[p.root+'|'+p.type]?VoicingCache[p.root+'|'+p.type][0]:null;
+    const cached=VoicingCache[p.root+'|'+p.type];const entry=cached?cached[0]:null;const shape=entry?entry.frets:null;
     if(shape){
       const notes=getChordNotes(p.root,p.type);
       notes.forEach((n,i)=>{setTimeout(()=>{AudioEngine.playTone(OPEN_FREQS[0]*Math.pow(2,(NOTE_SEMITONE[n]+12)/12),0.5,'triangle',0.15);},i*100);});
-      // Play chord tones on fretboard
       shape.forEach((f,si)=>{if(typeof f==='number'&&f>=0)setTimeout(()=>{AudioEngine.playFretSound(si,f);},si*60);});
     }
     renderProgs();
@@ -274,7 +383,7 @@ function initChordFinder(){
       if(cy>=muteZ&&cy<openZ)cf='x';else if(cy>=openZ&&cy<topMargin)cf=0;else if(cy>=topMargin&&cy<topMargin+NUM_FRETS*fretHeight){cf=Math.floor((cy-topMargin)/fretHeight)+1;if(cf>12)cf=12;}}
     return{clickedString:cs,clickedFret:cf};
   }
-  function getCurrentShape(){return currentMode==='query'?allVoicings[voicingIdx]||[]:reverseFrets;}
+  function getCurrentShape(){if(currentMode==='query'){const e=allVoicings[voicingIdx];return e?e.frets:[];}return reverseFrets;}
 
   // ---- 扫弦播放 ----
   function playStrum(stringIndices,direction){
@@ -335,20 +444,20 @@ function initChordFinder(){
   }
 
   function renderVoicing(){
-    const cd=CHORD_DEFS[selType],shape=allVoicings[voicingIdx];
-    if(!shape){return;}
-    const sn=cd.sn||'',displayShort=sn?selRoot+sn:selRoot;
+    const cd=CHORD_DEFS[selType],entry=allVoicings[voicingIdx];
+    if(!entry){return;}
+    const shape=entry.frets,sn=cd.sn||'',displayShort=sn?selRoot+sn:selRoot;
     chordNameEl.innerHTML=`${displayShort} <span class="chord-type-badge">${cd.name}</span>`;
     const notes=getNotesFromIntervals(selRoot,cd.st);
     notesEl.textContent=notes.join(' · ');intervalsEl.textContent=cd.intervals;
     tagsEl.innerHTML=notes.map((n,i)=>`<span class="chord-note-tag ${TAG_CLASSES[i]||'fifth'}">${n}</span>`).join('');
     updateFavBtn();
     // 指型导航
-    voicingLabel.textContent=`${voicingIdx+1}/${allVoicings.length}`;
+    voicingLabel.textContent=`${voicingIdx+1}/${allVoicings.length} · ${entry.name}`;
     voicingPrev.disabled=voicingIdx===0;voicingNext.disabled=voicingIdx===allVoicings.length-1;
-    voicingDots.innerHTML=allVoicings.map((_,i)=>`<span class="voicing-dot${i===voicingIdx?' active':''}"></span>`).join('');
+    voicingDots.innerHTML=allVoicings.map((v,i)=>`<span class="voicing-dot${i===voicingIdx?' active':''}" title="${v.name}"></span>`).join('');
     voicingDots.querySelectorAll('.voicing-dot').forEach((d,i)=>d.addEventListener('click',()=>{voicingIdx=i;renderVoicing();}));
-    drawFretboard(shape,{name:cd.name,root:selRoot});
+    drawFretboard(shape,{name:cd.name,root:selRoot,shapeName:entry.name});
     // 更新进行面板的当前和弦名
     if(progAdd)progAdd.title='加入进行: '+displayShort;
   }
@@ -424,6 +533,11 @@ function initChordFinder(){
     for(let s=0;s<NUM_STRINGS;s++)ctx.fillText(6-s,lm+s*ss,tm-Math.round(24*scale));
     ctx.fillStyle='rgba(255,255,255,0.2)';ctx.font=`500 ${Math.max(7,Math.round(9*scale))}px -apple-system,sans-serif`;
     for(let s=0;s<NUM_STRINGS;s++)ctx.fillText(OPEN_NOTES[s],lm+s*ss,tm-Math.round(32*scale));
+    // 指型名称标签
+    if(info.shapeName){
+      ctx.fillStyle='rgba(100,210,255,0.7)';ctx.font=`600 ${Math.max(8,Math.round(10*scale))}px -apple-system,sans-serif`;
+      ctx.textAlign='right';ctx.fillText(info.shapeName,w-Math.round(8*scale),Math.round(14*scale));
+    }
   }
 
   function drawScaleOnFretboard(scaleNotes,noteSet,rootST,rootName){
