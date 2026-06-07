@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#000000">
+    <meta name="format-detection" content="telephone=no">
+    <title>吉他学习助手</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Vibe Coding 手势动画层 -->
+    <div class="vibe-gesture-layer" id="vibeLayer">
+        <div class="vibe-orb"></div>
+        <div class="vibe-orb"></div>
+        <div class="vibe-orb"></div>
+        <div class="vibe-orb"></div>
+        <div class="vibe-orb"></div>
+        <div class="vibe-orb"></div>
+        <div class="vibe-trail"></div>
+        <div class="vibe-trail"></div>
+        <div class="vibe-trail"></div>
+    </div>
+    <div class="cursor-glow" id="cursorGlow"></div>
+
+    <div class="app-container">
+        <!-- 顶部导航 -->
+        <header class="header">
+            <div class="logo">
+                <div class="logo-icon">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                        <path d="M12 3c-3 0-6 1.5-6 4.5v9c0 3 3 4.5 6 4.5s6-1.5 6-4.5v-9C18 4.5 15 3 12 3z" stroke="white" stroke-width="2" fill="none"/>
+                        <line x1="6" y1="9" x2="18" y2="9" stroke="white" stroke-width="1.5" opacity="0.7"/>
+                        <line x1="6" y1="12" x2="18" y2="12" stroke="white" stroke-width="1.5" opacity="0.7"/>
+                        <line x1="6" y1="15" x2="18" y2="15" stroke="white" stroke-width="1.5" opacity="0.7"/>
+                        <circle cx="12" cy="12" r="2" fill="white" opacity="0.5"/>
+                    </svg>
+                </div>
+                <h1>吉他学习助手</h1>
+            </div>
+            <nav class="nav-tabs" id="navTabs">
+                <button class="nav-tab active" data-tab="chord">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                        <circle cx="12" cy="12" r="3"/>
+                        <circle cx="12" cy="12" r="9"/>
+                        <line x1="12" y1="3" x2="12" y2="9"/>
+                        <line x1="12" y1="15" x2="12" y2="21"/>
+                        <line x1="3" y1="12" x2="9" y2="12"/>
+                        <line x1="15" y1="12" x2="21" y2="12"/>
+                    </svg>
+                    和弦
+                </button>
+                <button class="nav-tab" data-tab="tuner">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                    </svg>
+                    调音
+                </button>
+                <button class="nav-tab" data-tab="metronome">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                        <path d="M12 21a9 9 0 1 0 0-18"/>
+                        <line x1="12" y1="21" x2="12" y2="9"/>
+                        <line x1="12" y1="9" x2="6.5" y2="3"/>
+                    </svg>
+                    节拍
+                </button>
+            </nav>
+        </header>
+
+        <!-- 主内容区 -->
+        <main class="main-content">
+            <!-- ====== 和弦查询器 ====== -->
+            <section class="tab-panel active" id="panel-chord">
+                <div class="panel-inner">
+                    <!-- 模式切换 -->
+                    <div class="chord-mode-tabs" id="chordModeTabs">
+                        <button class="chord-mode-tab active" data-mode="query">查询和弦</button>
+                        <button class="chord-mode-tab" data-mode="reverse">指板推理</button>
+                    </div>
+
+                    <div class="chord-selector" id="chordSelector">
+                        <div class="select-group">
+                            <label>根音</label>
+                            <div class="note-buttons" id="rootNotes">
+                                <button class="note-btn active" data-note="C">C</button>
+                                <button class="note-btn" data-note="C#">C#</button>
+                                <button class="note-btn" data-note="D">D</button>
+                                <button class="note-btn" data-note="D#">D#</button>
+                                <button class="note-btn" data-note="E">E</button>
+                                <button class="note-btn" data-note="F">F</button>
+                                <button class="note-btn" data-note="F#">F#</button>
+                                <button class="note-btn" data-note="G">G</button>
+                                <button class="note-btn" data-note="G#">G#</button>
+                                <button class="note-btn" data-note="A">A</button>
+                                <button class="note-btn" data-note="A#">A#</button>
+                                <button class="note-btn" data-note="B">B</button>
+                            </div>
+                        </div>
+                        <div class="select-group">
+                            <label>和弦类型</label>
+                            <div class="chord-type-buttons" id="chordTypes">
+                                <button class="type-btn active" data-type="major">大三和弦</button>
+                                <button class="type-btn" data-type="minor">小三和弦</button>
+                                <button class="type-btn" data-type="7">属七和弦</button>
+                                <button class="type-btn" data-type="maj7">大七和弦</button>
+                                <button class="type-btn" data-type="m7">小七和弦</button>
+                                <button class="type-btn" data-type="dim">减三和弦</button>
+                                <button class="type-btn" data-type="aug">增三和弦</button>
+                                <button class="type-btn" data-type="sus4">挂四和弦</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="chord-display">
+                        <div class="chord-name-display" id="chordName">C <span class="chord-type-badge">大三和弦</span></div>
+                        <div class="reverse-chord-hint" id="reverseHint" style="display:none">点击指板上的品位来标记按弦位置</div>
+                        <div class="chord-diagram-scroll-container" id="fretboardScrollContainer">
+                        <div class="chord-diagram-container">
+                            <canvas id="chordCanvas"></canvas>
+                        </div>
+                    </div>
+                    <div class="strum-hint" id="strumHint">← 滑动指板浏览 · 拖拽扫弦 →</div>
+                        <div class="chord-note-tags" id="chordNoteTags">
+                            <span class="chord-note-tag root">C</span>
+                            <span class="chord-note-tag third">E</span>
+                            <span class="chord-note-tag fifth">G</span>
+                        </div>
+                        <div class="chord-info">
+                            <div class="chord-info-card">
+                                <span class="info-label">组成音</span>
+                                <span class="info-value" id="chordNotesComposition">C · E · G</span>
+                            </div>
+                            <div class="chord-info-card">
+                                <span class="info-label">音程关系</span>
+                                <span class="info-value" id="chordIntervals">根音 · 大三度 · 纯五度</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ====== 调音器 - 琴头样式 ====== -->
+            <section class="tab-panel" id="panel-tuner">
+                <div class="panel-inner tuner-panel">
+                    <div class="tuner-header">
+                        <h2>调音器</h2>
+                        <p id="tunerDesc">标准调弦 · E₂ A₂ D₃ G₃ B₃ E₄</p>
+                    </div>
+
+                    <!-- 乐器选择 -->
+                    <div class="instrument-selector" id="instrumentSelector">
+                        <button class="instrument-btn active" data-instrument="guitar">吉他</button>
+                        <button class="instrument-btn" data-instrument="ukulele">尤克里里</button>
+                        <button class="instrument-btn" data-instrument="bass">贝斯</button>
+                    </div>
+
+                    <!-- 琴头样式 - 左右分列 -->
+                    <div class="headstock-container">
+                        <div class="headstock-brand">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                <path d="M12 3c-3 0-6 1.5-6 4.5v9c0 3 3 4.5 6 4.5s6-1.5 6-4.5v-9C18 4.5 15 3 12 3z" stroke="white" stroke-width="2" fill="none" opacity="0.4"/>
+                            </svg>
+                            <span>Tuning</span>
+                        </div>
+
+                        <!-- 琴头主体：动态渲染 -->
+                        <div class="headstock-body" id="headstockBody">
+                            <div class="headstock-column headstock-left" id="headstockLeft"></div>
+                            <div class="headstock-neck">
+                                <div class="neck-line"></div>
+                                <div class="neck-nut"></div>
+                            </div>
+                            <div class="headstock-column headstock-right" id="headstockRight"></div>
+                        </div>
+                    </div>
+
+                    <div class="tuner-mic-section">
+                        <button class="mic-btn" id="micBtn">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                            </svg>
+                            开始调音
+                        </button>
+                        <div class="detected-freq" id="detectedFreq">-- Hz</div>
+                        <div class="detected-note" id="detectedNote">轻弹琴弦即可检测</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ====== 节拍器 ====== -->
+            <section class="tab-panel" id="panel-metronome">
+                <div class="panel-inner metronome-panel">
+                    <div class="metronome-display">
+                        <div class="bpm-display">
+                            <span class="bpm-value" id="bpmValue">120</span>
+                            <span class="bpm-label">BPM</span>
+                        </div>
+                        <div class="time-signature-selector" id="timeSignatureSelector">
+                            <button class="ts-btn active" data-beats="4" data-division="4">4/4</button>
+                            <button class="ts-btn" data-beats="3" data-division="4">3/4</button>
+                            <button class="ts-btn" data-beats="2" data-division="4">2/4</button>
+                            <button class="ts-btn" data-beats="6" data-division="8">6/8</button>
+                            <button class="ts-btn" data-beats="5" data-division="4">5/4</button>
+                            <button class="ts-btn" data-beats="7" data-division="8">7/8</button>
+                        </div>
+                    </div>
+
+                    <div class="bpm-control">
+                        <button class="bpm-btn" id="bpmDecrease10" aria-label="减速 10">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                                <line x1="5" y1="12" x2="19" y2="12"/>
+                                <line x1="12" y1="5" x2="12" y2="19"/>
+                            </svg>
+                        </button>
+                        <button class="bpm-btn" id="bpmDecrease1" aria-label="减速 1">−1</button>
+                        <input type="range" class="bpm-slider" id="bpmSlider" min="30" max="250" value="120" aria-label="BPM 滑块">
+                        <button class="bpm-btn" id="bpmIncrease1" aria-label="加速 1">+1</button>
+                        <button class="bpm-btn" id="bpmIncrease10" aria-label="加速 10">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                                <line x1="12" y1="5" x2="12" y2="19"/>
+                                <line x1="5" y1="12" x2="19" y2="12"/>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div class="tap-tempo">
+                        <button class="tap-btn" id="tapBtn">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                <circle cx="12" cy="12" r="10"/>
+                                <circle cx="12" cy="12" r="3"/>
+                            </svg>
+                            打拍定速
+                        </button>
+                    </div>
+
+                    <div class="beat-visual" id="beatVisual">
+                        <div class="beat-dot active accent" data-beat="0"></div>
+                        <div class="beat-dot" data-beat="1"></div>
+                        <div class="beat-dot" data-beat="2"></div>
+                        <div class="beat-dot" data-beat="3"></div>
+                    </div>
+
+                    <div class="metronome-controls">
+                        <button class="metronome-start-btn" id="metronomeStart">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                <polygon points="8,5 19,12 8,19"/>
+                            </svg>
+                            开始
+                        </button>
+                    </div>
+
+                    <div class="sound-select">
+                        <label>音色</label>
+                        <select id="soundSelect">
+                            <option value="click">经典咔哒</option>
+                            <option value="wood">木鱼声</option>
+                            <option value="beep">电子嘀</option>
+                            <option value="clave">响棒</option>
+                            <option value="cowbell">牛铃</option>
+                            <option value="rimshot">鼓边</option>
+                            <option value="hihat">踩镲</option>
+                            <option value="stick">鼓棒</option>
+                        </select>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

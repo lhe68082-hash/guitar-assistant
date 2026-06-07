@@ -1,0 +1,1616 @@
+/* ============ Apple-Style 吉他学习助手 v3 ============ */
+
+*,
+*::before,
+*::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    /* 苹果风格配色系统 */
+    --bg-root: #000000;
+    --bg-surface: #1c1c1e;
+    --bg-elevated: #2c2c2e;
+    --bg-card: #3a3a3c;
+    --bg-segmented: #242426;
+
+    /* 系统色彩 */
+    --blue: #0a84ff;
+    --blue-light: #4da6ff;
+    --blue-glow: rgba(10, 132, 255, 0.45);
+    --green: #30d158;
+    --green-glow: rgba(48, 209, 88, 0.45);
+    --orange: #ff9f0a;
+    --orange-glow: rgba(255, 159, 10, 0.45);
+    --red: #ff453a;
+    --red-glow: rgba(255, 69, 58, 0.45);
+    --pink: #ff375f;
+    --pink-glow: rgba(255, 55, 95, 0.45);
+    --purple: #bf5af2;
+    --purple-glow: rgba(191, 90, 242, 0.45);
+    --teal: #64d2ff;
+    --teal-glow: rgba(100, 210, 255, 0.4);
+    --yellow: #ffd60a;
+
+    /* 文字 */
+    --text-primary: #ffffff;
+    --text-secondary: rgba(255, 255, 255, 0.7);
+    --text-tertiary: rgba(255, 255, 255, 0.45);
+    --text-quaternary: rgba(255, 255, 255, 0.25);
+
+    /* 分隔 */
+    --separator: rgba(255, 255, 255, 0.12);
+    --separator-opaque: #38383a;
+
+    /* 填充 */
+    --fill-primary: rgba(255, 255, 255, 0.12);
+    --fill-secondary: rgba(255, 255, 255, 0.08);
+    --fill-tertiary: rgba(255, 255, 255, 0.04);
+
+    /* 圆角 */
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+    --radius-2xl: 24px;
+    --radius-full: 9999px;
+
+    /* 阴影 */
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+
+    /* 过渡 */
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+    --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --duration-fast: 0.15s;
+    --duration-normal: 0.25s;
+    --duration-slow: 0.35s;
+}
+
+html {
+    font-size: 16px;
+    -webkit-text-size-adjust: 100%;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    height: 100%;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    background: var(--bg-root);
+    color: var(--text-primary);
+    min-height: 100vh;
+    min-height: 100dvh;
+    line-height: 1.47059;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+    overflow-y: visible;
+}
+
+/* 背景渐变装饰 */
+body::before {
+    content: "";
+    position: fixed;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background:
+        radial-gradient(ellipse 40% 50% at 20% 20%, rgba(10, 132, 255, 0.08) 0%, transparent 50%),
+        radial-gradient(ellipse 35% 45% at 80% 60%, rgba(191, 90, 242, 0.06) 0%, transparent 50%),
+        radial-gradient(ellipse 30% 40% at 50% 80%, rgba(48, 209, 88, 0.05) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* ============ Vibe Coding 手势动画层 ============ */
+.vibe-gesture-layer {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.vibe-orb {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--blue);
+    box-shadow: 0 0 20px var(--blue-glow), 0 0 60px var(--blue-glow);
+    animation: orbFloat 8s ease-in-out infinite;
+    opacity: 0.6;
+}
+
+.vibe-orb:nth-child(1) { top: 15%; left: 10%; animation-delay: 0s; background: var(--blue); }
+.vibe-orb:nth-child(2) { top: 25%; right: 15%; animation-delay: -2s; background: var(--purple); box-shadow: 0 0 20px var(--purple-glow), 0 0 60px var(--purple-glow); }
+.vibe-orb:nth-child(3) { top: 60%; left: 20%; animation-delay: -4s; background: var(--teal); box-shadow: 0 0 20px var(--teal-glow), 0 0 60px var(--teal-glow); }
+.vibe-orb:nth-child(4) { top: 70%; right: 10%; animation-delay: -6s; background: var(--pink); box-shadow: 0 0 20px var(--pink-glow), 0 0 60px var(--pink-glow); }
+.vibe-orb:nth-child(5) { top: 40%; left: 5%; animation-delay: -3s; background: var(--green); box-shadow: 0 0 20px var(--green-glow), 0 0 60px var(--green-glow); }
+.vibe-orb:nth-child(6) { top: 50%; right: 5%; animation-delay: -5s; background: var(--orange); box-shadow: 0 0 20px var(--orange-glow), 0 0 60px var(--orange-glow); }
+
+@keyframes orbFloat {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    25% { transform: translate(30px, -40px) scale(1.8); }
+    50% { transform: translate(-20px, -80px) scale(1.2); }
+    75% { transform: translate(-40px, -20px) scale(2); }
+}
+
+.vibe-trail {
+    position: absolute;
+    width: 80px;
+    height: 80px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 50%;
+    animation: trailExpand 4s ease-out infinite;
+}
+
+.vibe-trail:nth-child(7) { top: 30%; left: 30%; animation-delay: 0s; }
+.vibe-trail:nth-child(8) { top: 55%; right: 25%; animation-delay: -1.5s; }
+.vibe-trail:nth-child(9) { top: 20%; right: 35%; animation-delay: -3s; }
+
+@keyframes trailExpand {
+    0% { transform: scale(0.3); opacity: 0.5; }
+    100% { transform: scale(4); opacity: 0; }
+}
+
+/* 手势光标跟随 */
+.cursor-glow {
+    position: fixed;
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 0;
+    background: radial-gradient(circle, rgba(100, 210, 255, 0.12) 0%, transparent 70%);
+    transform: translate(-50%, -50%);
+    transition: opacity 0.6s ease;
+}
+
+/* ============ 应用容器 ============ */
+.app-container {
+    position: relative;
+    z-index: 1;
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 0 16px env(safe-area-inset-bottom, 40px);
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ============ 头部 ============ */
+.header {
+    padding: 16px 0 0;
+    text-align: center;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    margin: 0 -16px;
+    padding: max(16px, env(safe-area-inset-top)) 16px 0;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.logo-icon {
+    width: 38px;
+    height: 38px;
+    background: linear-gradient(135deg, var(--blue), var(--purple));
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 12px rgba(10, 132, 255, 0.3);
+    animation: logoPulse 3s ease-in-out infinite;
+}
+
+@keyframes logoPulse {
+    0%, 100% { box-shadow: 0 2px 12px rgba(10, 132, 255, 0.3); }
+    50% { box-shadow: 0 2px 24px rgba(191, 90, 242, 0.5); }
+}
+
+.logo h1 {
+    font-size: 1.35rem;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+    background: linear-gradient(135deg, var(--text-primary) 30%, var(--teal) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* ============ 分段控制器导航 ============ */
+.nav-tabs {
+    display: flex;
+    background: var(--bg-segmented);
+    border-radius: 10px;
+    padding: 3px;
+    gap: 2px;
+}
+
+.nav-tab {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 9px 4px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    font-weight: 500;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all var(--duration-normal) var(--ease-out);
+    white-space: nowrap;
+    position: relative;
+}
+
+.nav-tab svg {
+    flex-shrink: 0;
+}
+
+.nav-tab:hover {
+    color: var(--text-primary);
+}
+
+.nav-tab.active {
+    background: var(--bg-elevated);
+    color: var(--text-primary);
+    font-weight: 600;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 0 0 0.5px rgba(255, 255, 255, 0.08);
+}
+
+/* ============ 主内容区 ============ */
+.main-content {
+    flex: 1;
+    margin-top: 16px;
+}
+
+.tab-panel {
+    display: none;
+}
+
+.tab-panel.active {
+    display: block;
+    animation: fadeSlideIn var(--duration-slow) var(--spring);
+}
+
+@keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateY(16px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.panel-inner {
+    background: var(--bg-surface);
+    border-radius: var(--radius-xl);
+    padding: 20px;
+    border: 0.5px solid var(--separator);
+    box-shadow: var(--shadow-sm);
+}
+
+/* ============ 和弦查询器 ============ */
+.chord-selector {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-bottom: 20px;
+}
+
+.select-group label {
+    display: block;
+    font-size: 0.7rem;
+    color: var(--text-tertiary);
+    margin-bottom: 8px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+}
+
+/* 修复：note-btn 不再使用 ::after 覆盖层 */
+.note-buttons {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 4px;
+}
+
+.note-btn {
+    height: 38px;
+    border: none;
+    background: var(--fill-secondary);
+    color: var(--text-secondary);
+    border-radius: var(--radius-sm);
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--duration-fast) var(--ease-out);
+    position: relative;
+}
+
+.note-btn:hover {
+    background: var(--fill-primary);
+    color: var(--text-primary);
+    transform: translateY(-1px);
+}
+
+.note-btn.active {
+    background: var(--blue);
+    color: #ffffff;
+    font-weight: 700;
+    box-shadow: 0 2px 12px var(--blue-glow);
+    transform: translateY(-1px);
+}
+
+.chord-type-buttons {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 5px;
+}
+
+.type-btn {
+    padding: 10px 8px;
+    border: none;
+    background: var(--fill-secondary);
+    color: var(--text-secondary);
+    border-radius: var(--radius-sm);
+    font-size: 0.7rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--duration-fast) var(--ease-out);
+    line-height: 1.3;
+}
+
+.type-btn:hover {
+    background: var(--fill-primary);
+    color: var(--text-primary);
+}
+
+.type-btn.active {
+    background: var(--purple);
+    color: #ffffff;
+    font-weight: 600;
+    box-shadow: 0 2px 12px var(--purple-glow);
+}
+
+/* 和弦展示区 */
+.chord-display {
+    text-align: center;
+}
+
+.chord-name-display {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+    letter-spacing: -0.3px;
+}
+
+.chord-name-display .chord-type-badge {
+    display: inline-block;
+    font-size: 0.65rem;
+    font-weight: 600;
+    background: var(--purple);
+    color: #fff;
+    padding: 2px 10px;
+    border-radius: var(--radius-full);
+    margin-left: 8px;
+    vertical-align: middle;
+}
+
+/* 反向和弦结果提示 */
+.reverse-chord-hint {
+    font-size: 0.68rem;
+    color: var(--text-tertiary);
+    margin-bottom: 10px;
+    font-weight: 500;
+    opacity: 0.8;
+}
+
+/* 模式切换标签 */
+.chord-mode-tabs {
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+    margin-bottom: 12px;
+}
+
+.chord-mode-tab {
+    padding: 5px 14px;
+    border: none;
+    background: var(--fill-secondary);
+    color: var(--text-tertiary);
+    border-radius: var(--radius-full);
+    font-size: 0.68rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--duration-fast) var(--ease-out);
+}
+
+.chord-mode-tab:hover {
+    background: var(--fill-primary);
+    color: var(--text-secondary);
+}
+
+.chord-mode-tab.active {
+    background: var(--teal);
+    color: #000;
+    font-weight: 700;
+}
+
+/* 指板滚动容器 */
+.chord-diagram-scroll-container {
+    margin-bottom: 4px;
+    position: relative;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.15) transparent;
+    border-radius: var(--radius-lg);
+    background: var(--bg-elevated);
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    /* 滚动条区域保留交互 */
+}
+
+.chord-diagram-scroll-container::-webkit-scrollbar {
+    height: 5px;
+}
+
+.chord-diagram-scroll-container::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.chord-diagram-scroll-container::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.2);
+    border-radius: 3px;
+}
+
+.chord-diagram-scroll-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(255,255,255,0.35);
+}
+
+.chord-diagram-container {
+    display: flex;
+    justify-content: flex-start;
+    position: relative;
+    min-width: max-content;
+    /* 让容器本身不拦截事件，只由 canvas 处理 */
+    pointer-events: none;
+}
+
+.chord-diagram-container canvas {
+    background: transparent;
+    cursor: pointer;
+    display: block;
+    filter: drop-shadow(0 4px 16px rgba(0, 0, 0, 0.3));
+    pointer-events: auto;
+    touch-action: none; /* 阻止浏览器默认手势，由 JS 完全接管 */
+    max-width: none; /* 允许 canvas 溢出滚动 */
+}
+
+/* 扫弦提示 */
+.strum-hint {
+    font-size: 0.6rem;
+    color: var(--text-quaternary);
+    text-align: center;
+    margin-bottom: 10px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    transition: color 0.2s ease;
+}
+
+.strum-hint.active {
+    color: var(--teal);
+}
+
+.chord-info {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.chord-info-card {
+    background: var(--fill-secondary);
+    border-radius: var(--radius-md);
+    padding: 14px;
+    text-align: left;
+}
+
+.chord-info-card .info-label {
+    display: block;
+    font-size: 0.65rem;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-bottom: 6px;
+    font-weight: 600;
+}
+
+.chord-info-card .info-value {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    letter-spacing: -0.2px;
+}
+
+/* 和弦音符标签 */
+.chord-note-tags {
+    display: flex;
+    gap: 6px;
+    margin-top: 14px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.chord-note-tag {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #fff;
+}
+
+.chord-note-tag.root { background: var(--blue); box-shadow: 0 2px 10px var(--blue-glow); }
+.chord-note-tag.third { background: var(--purple); box-shadow: 0 2px 10px var(--purple-glow); }
+.chord-note-tag.fifth { background: var(--pink); box-shadow: 0 2px 10px var(--pink-glow); }
+.chord-note-tag.seventh { background: var(--orange); box-shadow: 0 2px 10px var(--orange-glow); }
+
+/* ============ 调音器 - 琴头样式 ============ */
+.tuner-panel {
+    text-align: center;
+}
+
+.tuner-header {
+    margin-bottom: 20px;
+}
+
+.tuner-header h2 {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 2px;
+    letter-spacing: -0.3px;
+}
+
+.tuner-header p {
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+    font-weight: 500;
+}
+
+/* 乐器选择器 */
+.instrument-selector {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.instrument-btn {
+    padding: 6px 14px;
+    border-radius: var(--radius-full);
+    border: 1px solid var(--separator);
+    background: var(--fill-secondary);
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--duration-fast) var(--ease-out);
+    font-family: inherit;
+}
+
+.instrument-btn.active {
+    background: var(--blue);
+    color: #fff;
+    border-color: var(--blue);
+    box-shadow: 0 2px 8px var(--blue-glow);
+}
+
+/* 琴头容器 */
+.headstock-container {
+    position: relative;
+    margin-bottom: 20px;
+    padding: 20px 10px;
+    background: linear-gradient(180deg, rgba(44, 44, 46, 0.6) 0%, rgba(28, 28, 30, 0.8) 100%);
+    border-radius: var(--radius-xl);
+    border: 0.5px solid var(--separator);
+    overflow: hidden;
+}
+
+/* 琴头装饰纹理 */
+.headstock-container::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+        linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.02) 50%, transparent 100%);
+    pointer-events: none;
+}
+
+/* 琴头上方的品牌区域 */
+.headstock-brand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--separator);
+}
+
+.headstock-brand svg {
+    opacity: 0.5;
+}
+
+.headstock-brand span {
+    font-size: 0.65rem;
+    color: var(--text-quaternary);
+    letter-spacing: 3px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+/* ====== 琴头主体：左右分列布局 ====== */
+.headstock-body {
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+    gap: 0;
+    position: relative;
+    max-width: 100%;
+    margin: 0 auto;
+}
+
+/* 左右弦列 */
+.headstock-column {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-width: 170px;
+}
+
+/* 中间琴颈装饰 */
+.headstock-neck {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    flex-shrink: 0;
+    position: relative;
+}
+
+.neck-line {
+    flex: 1;
+    width: 4px;
+    background: linear-gradient(180deg,
+        rgba(160, 140, 110, 0.3) 0%,
+        rgba(160, 140, 110, 0.5) 30%,
+        rgba(160, 140, 110, 0.5) 70%,
+        rgba(160, 140, 110, 0.3) 100%);
+    border-radius: 2px;
+    margin: 8px 0;
+}
+
+.neck-nut {
+    width: 20px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.35);
+    border-radius: 1px;
+    position: absolute;
+    top: 8px;
+}
+
+/* 琴弦行 - 左右列共用 */
+.headstock-string {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 8px;
+    position: relative;
+    transition: all var(--duration-normal) var(--ease-out);
+    border-radius: var(--radius-sm);
+    border: 1px solid transparent;
+    background: var(--fill-tertiary);
+}
+
+/* 左列弦靠右（靠近中间） */
+.headstock-left .headstock-string {
+    flex-direction: row;
+}
+
+/* 右列弦靠左（靠近中间） */
+.headstock-right .headstock-string {
+    flex-direction: row-reverse;
+}
+
+.headstock-string:hover {
+    background: var(--fill-secondary);
+}
+
+.headstock-string.active {
+    background: rgba(48, 209, 88, 0.1);
+    border-color: rgba(48, 209, 88, 0.3);
+}
+
+/* 弦钮旋钮 */
+.tuning-peg {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    position: relative;
+    transition: transform var(--duration-fast) var(--spring);
+}
+
+.tuning-peg::after {
+    content: "";
+    width: 10px;
+    height: 2.5px;
+    background: rgba(255,255,255,0.5);
+    border-radius: 2px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+}
+
+/* 左边旋钮指向右侧（朝外） */
+.tuning-peg.peg-left::after {
+    transform: translate(-30%, -50%);
+}
+
+/* 右边旋钮指向左侧（朝外） */
+.tuning-peg.peg-right::after {
+    transform: translate(-70%, -50%);
+}
+
+.tuning-peg:hover {
+    transform: rotate(30deg);
+}
+
+.tuning-peg.peg-6 { background: linear-gradient(135deg, #8B7355, #C4A46C); }
+.tuning-peg.peg-5 { background: linear-gradient(135deg, #8B7355, #C4A46C); }
+.tuning-peg.peg-4 { background: linear-gradient(135deg, #8B7355, #C4A46C); }
+.tuning-peg.peg-3 { background: linear-gradient(135deg, #A0A0A0, #D0D0D0); }
+.tuning-peg.peg-2 { background: linear-gradient(135deg, #A0A0A0, #D0D0D0); }
+.tuning-peg.peg-1 { background: linear-gradient(135deg, #A0A0A0, #D0D0D0); }
+
+/* 弦信息组 */
+.string-info {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+    flex: 1;
+}
+
+/* 左列：文本靠右（靠近琴颈） */
+.headstock-left .string-info {
+    flex-direction: row-reverse;
+    text-align: right;
+    justify-content: flex-start;
+}
+
+/* 右列：文本靠左（靠近琴颈） */
+.headstock-right .string-info {
+    flex-direction: row;
+    text-align: left;
+    justify-content: flex-start;
+}
+
+/* 弦号标签 */
+.string-number {
+    font-size: 0.68rem;
+    color: var(--text-tertiary);
+    min-width: 16px;
+    text-align: center;
+    font-weight: 700;
+}
+
+/* 音符显示 */
+.string-note-display {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    min-width: 24px;
+    text-align: center;
+    letter-spacing: -0.3px;
+}
+
+/* 频率显示 */
+.string-freq {
+    font-size: 0.6rem;
+    color: var(--text-quaternary);
+    min-width: 46px;
+    font-variant-numeric: tabular-nums;
+    font-family: "SF Mono", "Menlo", "Monaco", monospace;
+}
+
+/* 调音进度条 */
+.tuner-meter-horizontal {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 40px;
+}
+
+.tuner-bar-track {
+    height: 4px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 2px;
+    overflow: hidden;
+    position: relative;
+}
+
+/* 中线标记 */
+.tuner-bar-track::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: -2px;
+    bottom: -2px;
+    width: 1.5px;
+    background: rgba(255, 255, 255, 0.25);
+    border-radius: 1px;
+    z-index: 2;
+}
+
+.tuner-fill {
+    height: 100%;
+    width: 50%;
+    border-radius: 2px;
+    transition: width 0.1s ease, background var(--duration-normal) var(--ease-out);
+    background: var(--fill-primary);
+    position: relative;
+    z-index: 1;
+}
+
+.tuner-fill.in-tune {
+    background: var(--green);
+    box-shadow: 0 0 10px var(--green-glow);
+}
+
+.tuner-fill.sharp {
+    background: var(--red);
+    box-shadow: 0 0 6px var(--red-glow);
+}
+
+.tuner-fill.flat {
+    background: var(--orange);
+    box-shadow: 0 0 6px var(--orange-glow);
+}
+
+.tuner-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.55rem;
+    color: var(--text-quaternary);
+    padding: 0 1px;
+}
+
+.tuner-labels .center-label {
+    color: var(--green);
+}
+
+/* 播放按钮 */
+.string-play-btn {
+    width: 26px;
+    height: 26px;
+    border: none;
+    background: var(--fill-primary);
+    color: var(--blue-light);
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--duration-fast) var(--ease-out);
+    flex-shrink: 0;
+}
+
+.string-play-btn svg {
+    width: 12px;
+    height: 12px;
+}
+
+.string-play-btn:hover {
+    background: var(--blue);
+    color: #fff;
+    transform: scale(1.1);
+    box-shadow: 0 2px 12px var(--blue-glow);
+}
+
+.string-play-btn:active {
+    transform: scale(0.93);
+}
+
+.string-play-btn.playing {
+    background: var(--blue);
+    color: #fff;
+    animation: ripple 0.8s ease-out infinite;
+}
+
+@keyframes ripple {
+    0% { box-shadow: 0 0 0 0 var(--blue-glow); }
+    100% { box-shadow: 0 0 0 16px transparent; }
+}
+
+/* 麦克风调音区域 */
+.tuner-mic-section {
+    margin-top: 16px;
+    padding: 18px;
+    background: var(--fill-secondary);
+    border-radius: var(--radius-lg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.mic-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 13px 36px;
+    border: none;
+    background: var(--blue);
+    color: #fff;
+    font-size: 0.95rem;
+    font-weight: 600;
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    transition: all var(--duration-fast) var(--ease-out);
+    letter-spacing: -0.2px;
+}
+
+.mic-btn:hover {
+    background: var(--blue-light);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px var(--blue-glow);
+}
+
+.mic-btn:active {
+    transform: translateY(0) scale(0.97);
+}
+
+.mic-btn.listening {
+    background: var(--red);
+    animation: listeningPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes listeningPulse {
+    0%, 100% { box-shadow: 0 0 0 0 var(--red-glow); }
+    50% { box-shadow: 0 0 0 16px transparent; }
+}
+
+.detected-freq {
+    font-size: 2rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--teal), var(--blue-light));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-variant-numeric: tabular-nums;
+    font-family: "SF Mono", "Menlo", "Monaco", monospace;
+}
+
+.detected-note {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    transition: color var(--duration-fast) var(--ease-out);
+}
+
+/* ============ 节拍器 ============ */
+.metronome-panel {
+    text-align: center;
+}
+
+.metronome-display {
+    margin-bottom: 24px;
+}
+
+.bpm-display {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 6px;
+    margin-bottom: 4px;
+}
+
+.bpm-value {
+    font-size: 5.5rem;
+    font-weight: 200;
+    background: linear-gradient(180deg, var(--text-primary) 0%, var(--teal) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    font-family: "SF Pro Display", -apple-system, sans-serif;
+    letter-spacing: -3px;
+}
+
+.bpm-label {
+    font-size: 0.9rem;
+    color: var(--text-tertiary);
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.time-signature-selector {
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+.ts-btn {
+    padding: 5px 12px;
+    border: 1px solid var(--separator);
+    background: var(--fill-secondary);
+    color: var(--text-tertiary);
+    font-size: 0.72rem;
+    font-weight: 600;
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    transition: all var(--duration-fast) var(--ease-out);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.5px;
+}
+
+.ts-btn:hover {
+    border-color: var(--blue);
+    color: var(--text-secondary);
+    background: rgba(10, 132, 255, 0.08);
+}
+
+.ts-btn.active {
+    background: var(--teal);
+    border-color: var(--teal);
+    color: #000;
+    font-weight: 700;
+    box-shadow: 0 2px 8px var(--teal-glow);
+}
+
+.bpm-control {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-bottom: 18px;
+}
+
+.bpm-btn {
+    width: 38px;
+    height: 38px;
+    border: none;
+    background: var(--fill-secondary);
+    color: var(--text-secondary);
+    border-radius: 50%;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--duration-fast) var(--ease-out);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.bpm-btn:hover {
+    background: var(--fill-primary);
+    color: var(--text-primary);
+    transform: scale(1.06);
+}
+
+.bpm-btn:active {
+    transform: scale(0.94);
+}
+
+.bpm-slider {
+    flex: 1;
+    max-width: 180px;
+    height: 4px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: var(--fill-primary);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+}
+
+.bpm-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: #fff;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3), 0 0 0 4px rgba(255, 255, 255, 0.15);
+    transition: transform var(--duration-fast) var(--ease-out);
+}
+
+.bpm-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.1);
+}
+
+.tap-tempo {
+    margin-bottom: 18px;
+}
+
+.tap-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 11px 26px;
+    border: 1.5px solid var(--separator);
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-weight: 500;
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    transition: all var(--duration-fast) var(--ease-out);
+    letter-spacing: -0.2px;
+}
+
+.tap-btn:hover {
+    border-color: var(--blue);
+    color: var(--blue-light);
+    background: rgba(10, 132, 255, 0.06);
+}
+
+.tap-btn:active,
+.tap-btn.tapping {
+    border-color: var(--blue);
+    background: rgba(10, 132, 255, 0.15);
+    color: var(--blue-light);
+    transform: scale(0.96);
+}
+
+.beat-visual {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 24px;
+}
+
+.beat-dot {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--fill-secondary);
+    transition: all var(--duration-fast) var(--spring);
+}
+
+.beat-dot.active {
+    background: var(--blue);
+    box-shadow: 0 0 20px var(--blue-glow);
+    transform: scale(1.35);
+}
+
+.beat-dot.accent {
+    background: var(--purple);
+    box-shadow: 0 0 24px var(--purple-glow);
+    transform: scale(1.55);
+}
+
+.metronome-controls {
+    margin-bottom: 18px;
+}
+
+.metronome-start-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 14px 52px;
+    border: none;
+    background: var(--blue);
+    color: #fff;
+    font-size: 1.05rem;
+    font-weight: 600;
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    transition: all var(--duration-fast) var(--ease-out);
+    letter-spacing: -0.3px;
+}
+
+.metronome-start-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 20px var(--blue-glow);
+}
+
+.metronome-start-btn:active {
+    transform: translateY(0) scale(0.97);
+}
+
+.metronome-start-btn.running {
+    background: var(--pink);
+}
+
+.metronome-start-btn.running:hover {
+    box-shadow: 0 4px 20px var(--pink-glow);
+}
+
+.sound-select {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.sound-select label {
+    font-size: 0.8rem;
+    color: var(--text-tertiary);
+    font-weight: 500;
+}
+
+.sound-select select {
+    padding: 8px 28px 8px 14px;
+    background: var(--fill-secondary);
+    color: var(--text-primary);
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23ffffff' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' opacity='0.5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+}
+
+.sound-select select:hover {
+    background-color: var(--fill-primary);
+}
+
+/* ============ 响应式适配 ============ */
+
+/* 小屏手机 (iPhone SE / 320-374px) */
+@media (max-width: 374px) {
+    .app-container {
+        padding: 0 10px env(safe-area-inset-bottom, 24px);
+    }
+
+    .header {
+        margin: 0 -10px;
+        padding: max(10px, env(safe-area-inset-top)) 10px 0;
+    }
+
+    .logo-icon {
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+    }
+
+    .logo h1 {
+        font-size: 1.1rem;
+    }
+
+    .nav-tab {
+        font-size: 0.68rem;
+        padding: 7px 2px;
+        gap: 2px;
+    }
+
+    .nav-tab svg {
+        width: 15px;
+        height: 15px;
+    }
+
+    .panel-inner {
+        padding: 12px;
+        border-radius: var(--radius-lg);
+    }
+
+    .note-btn {
+        height: 30px;
+        font-size: 0.68rem;
+    }
+
+    .chord-type-buttons {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .type-btn {
+        font-size: 0.64rem;
+        padding: 7px 4px;
+    }
+
+    .bpm-value {
+        font-size: 3.6rem;
+        letter-spacing: -2px;
+    }
+
+    .chord-name-display {
+        font-size: 1.1rem;
+    }
+
+    .chord-info-card {
+        padding: 10px;
+    }
+
+    .chord-info-card .info-value {
+        font-size: 0.75rem;
+    }
+
+    .chord-note-tag {
+        width: 34px;
+        height: 34px;
+        font-size: 0.75rem;
+    }
+
+    .headstock-string {
+        padding: 4px 6px;
+        gap: 3px;
+    }
+
+    .string-note-display {
+        font-size: 0.8rem;
+    }
+
+    .string-freq {
+        font-size: 0.52rem;
+        min-width: 40px;
+    }
+
+    .string-play-btn {
+        width: 26px;
+        height: 26px;
+    }
+
+    .tuning-peg {
+        width: 24px;
+        height: 24px;
+    }
+
+    .headstock-neck {
+        width: 16px;
+    }
+
+    .neck-line {
+        width: 3px;
+    }
+
+    .tuner-meter-horizontal {
+        min-width: 30px;
+    }
+
+    .ts-btn {
+        padding: 4px 8px;
+        font-size: 0.64rem;
+    }
+
+    .metronome-start-btn {
+        padding: 12px 36px;
+        font-size: 0.95rem;
+    }
+
+    .beat-dot {
+        width: 22px;
+        height: 22px;
+    }
+
+    .bpm-btn {
+        width: 32px;
+        height: 32px;
+        font-size: 0.7rem;
+    }
+
+    .tap-btn {
+        padding: 9px 20px;
+        font-size: 0.78rem;
+    }
+
+    .chord-mode-tab {
+        padding: 4px 10px;
+        font-size: 0.62rem;
+    }
+
+    .strum-hint {
+        font-size: 0.55rem;
+    }
+}
+
+/* 中等手机 (iPhone 12/13/14/15/16 - 375-430px) */
+@media (min-width: 375px) and (max-width: 430px) {
+    .app-container {
+        padding: 0 14px env(safe-area-inset-bottom, 32px);
+    }
+
+    .header {
+        margin: 0 -14px;
+        padding: max(14px, env(safe-area-inset-top)) 14px 0;
+    }
+
+    .logo h1 {
+        font-size: 1.25rem;
+    }
+
+    .nav-tab {
+        font-size: 0.75rem;
+        padding: 8px 3px;
+    }
+
+    .panel-inner {
+        padding: 16px;
+        border-radius: var(--radius-lg);
+    }
+
+    .note-btn {
+        height: 34px;
+        font-size: 0.72rem;
+    }
+
+    .chord-type-buttons {
+        grid-template-columns: repeat(4, 1fr);
+    }
+
+    .type-btn {
+        font-size: 0.68rem;
+        padding: 8px 4px;
+    }
+
+    .bpm-value {
+        font-size: 4.5rem;
+    }
+
+    .headstock-string {
+        padding: 6px 8px;
+        gap: 5px;
+    }
+
+    .string-freq {
+        font-size: 0.58rem;
+        min-width: 42px;
+    }
+
+    .headstock-neck {
+        width: 20px;
+    }
+
+    .tuner-meter-horizontal {
+        min-width: 36px;
+    }
+}
+
+/* 大屏手机 (431-600px) */
+@media (min-width: 431px) and (max-width: 600px) {
+    .app-container {
+        padding: 0 16px env(safe-area-inset-bottom, 36px);
+    }
+}
+
+/* 平板及以上 */
+@media (min-width: 601px) {
+    .app-container {
+        padding: 0 20px env(safe-area-inset-bottom, 48px);
+    }
+}
+
+/* 横屏手机适配 */
+@media (max-height: 500px) and (orientation: landscape) {
+    .header {
+        position: static;
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+    }
+
+    .logo {
+        margin-bottom: 6px;
+    }
+
+    .logo-icon {
+        width: 28px;
+        height: 28px;
+    }
+
+    .logo h1 {
+        font-size: 1rem;
+    }
+
+    .nav-tab {
+        padding: 6px 2px;
+        font-size: 0.65rem;
+    }
+
+    .bpm-value {
+        font-size: 3rem;
+    }
+
+    .metronome-display {
+        margin-bottom: 12px;
+    }
+
+    .beat-visual {
+        margin-bottom: 12px;
+    }
+
+    .panel-inner {
+        padding: 12px;
+    }
+
+    .chord-selector {
+        gap: 8px;
+        margin-bottom: 10px;
+    }
+
+    .chord-diagram-scroll-container {
+        max-height: 220px;
+    }
+
+    .tuner-mic-section {
+        padding: 10px;
+        margin-top: 8px;
+    }
+
+    .headstock-string {
+        padding: 4px 8px;
+    }
+
+    .string-freq {
+        display: none;
+    }
+
+    .detected-freq {
+        font-size: 1.5rem;
+    }
+}
+
+/* 触摸设备全局优化 */
+@media (hover: none) and (pointer: coarse) {
+    /* 增大触摸目标 */
+    .note-btn, .type-btn, .nav-tab, .chord-mode-tab {
+        min-height: 44px; /* iOS HIG 推荐的最小触摸目标 */
+    }
+
+    .bpm-btn, .string-play-btn {
+        min-width: 44px;
+        min-height: 44px;
+    }
+
+    /* 去掉 hover 效果在触摸设备上 */
+    .note-btn:hover, .type-btn:hover {
+        transform: none;
+    }
+}
+
+/* 深色主题下系统滚动条隐藏（移动端） */
+@media (max-width: 600px) {
+    .chord-diagram-scroll-container {
+        -ms-overflow-style: none;
+    }
+
+    .chord-diagram-scroll-container::-webkit-scrollbar {
+        display: none;
+    }
+}
