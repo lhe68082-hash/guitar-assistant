@@ -612,19 +612,19 @@ body::before {
 }
 
 .tuner-header {
-    margin-bottom: 12px;
+    margin-bottom: 14px;
 }
 
 .tuner-header h2 {
-    font-size: 1.2rem;
+    font-size: 1.35rem;
     font-weight: 700;
     color: var(--text-primary);
-    margin-bottom: 2px;
+    margin-bottom: 4px;
     letter-spacing: -0.3px;
 }
 
 .tuner-header p {
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     color: var(--text-tertiary);
     font-weight: 500;
 }
@@ -661,7 +661,7 @@ body::before {
 .headstock-container {
     position: relative;
     margin-bottom: 20px;
-    padding: 20px 10px;
+    padding: 24px 12px;
     background: linear-gradient(180deg, rgba(44, 44, 46, 0.6) 0%, rgba(28, 28, 30, 0.8) 100%);
     border-radius: var(--radius-xl);
     border: 0.5px solid var(--separator);
@@ -770,8 +770,8 @@ body::before {
 .headstock-string {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 10px 8px;
+    gap: 10px;
+    padding: 14px 12px;
     position: relative;
     transition: all var(--duration-normal) var(--ease-out);
     border-radius: var(--radius-sm);
@@ -780,10 +780,13 @@ body::before {
     cursor: pointer;
 }
 
-/* 统一为 row，试听按钮都在最右侧，左右对齐 */
-.headstock-left .headstock-string,
-.headstock-right .headstock-string {
+/* 左列：信息 | 调音条 | 试听（从左到右）*/
+.headstock-left .headstock-string {
     flex-direction: row;
+}
+/* 右列：试听 | 调音条 | 信息（row-reverse 反转后视觉上为 试听 | 调音条 | 信息）*/
+.headstock-right .headstock-string {
+    flex-direction: row-reverse;
 }
 
 .headstock-string:hover {
@@ -855,17 +858,22 @@ body::before {
     flex: 0 0 auto;
 }
 
-/* 统一文本方向 */
-.headstock-left .string-info,
-.headstock-right .string-info {
+/* 左列文本从左到右（弦号→音名）*/
+.headstock-left .string-info {
     flex-direction: row;
     text-align: left;
+    justify-content: flex-start;
+}
+/* 右列文本从右到左（弦号←音名），让弦号靠近琴颈 */
+.headstock-right .string-info {
+    flex-direction: row-reverse;
+    text-align: right;
     justify-content: flex-start;
 }
 
 /* 弦号标签 */
 .string-number {
-    font-size: 0.85rem;
+    font-size: 0.95rem;
     color: var(--text-tertiary);
     min-width: 22px;
     text-align: center;
@@ -876,10 +884,10 @@ body::before {
 
 /* 音符显示 */
 .string-note-display {
-    font-size: 1.05rem;
+    font-size: 1.2rem;
     font-weight: 700;
     color: var(--text-primary);
-    min-width: 30px;
+    min-width: 28px;
     text-align: center;
     letter-spacing: -0.3px;
     flex-shrink: 0;
@@ -973,7 +981,7 @@ body::before {
     display: flex;
     align-items: center;
     gap: 4px;
-    padding: 5px 8px;
+    padding: 7px 12px;
     border: none;
     background: var(--fill-primary);
     color: var(--blue-light);
@@ -985,14 +993,14 @@ body::before {
 }
 
 .string-play-btn .play-label {
-    font-size: 0.58rem;
+    font-size: 0.65rem;
     font-weight: 600;
     color: var(--blue-light);
 }
 
 .string-play-btn svg {
-    width: 12px;
-    height: 12px;
+    width: 14px;
+    height: 14px;
 }
 
 .string-play-btn:hover {
@@ -1027,14 +1035,14 @@ body::before {
 
 /* 麦克风调音区域 */
 .tuner-mic-section {
-    margin-top: 16px;
-    padding: 18px;
+    margin-top: 20px;
+    padding: 22px;
     background: var(--fill-secondary);
     border-radius: var(--radius-lg);
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
 }
 
 .mic-btn {
@@ -1101,19 +1109,19 @@ body::before {
 }
 
 .metronome-display {
-    margin-bottom: 16px;
+    margin-bottom: 22px;
 }
 
 .bpm-display {
     display: flex;
     align-items: baseline;
     justify-content: center;
-    gap: 6px;
-    margin-bottom: 4px;
+    gap: 8px;
+    margin-bottom: 8px;
 }
 
 .bpm-value {
-    font-size: 5.5rem;
+    font-size: 6.5rem;
     font-weight: 200;
     background: linear-gradient(180deg, var(--text-primary) 0%, var(--teal) 100%);
     -webkit-background-clip: text;
@@ -1271,8 +1279,8 @@ body::before {
 }
 
 .beat-dot {
-    width: 28px;
-    height: 28px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
     background: var(--fill-secondary);
     transition: all var(--duration-fast) var(--spring);
@@ -1280,14 +1288,14 @@ body::before {
 
 .beat-dot.active {
     background: var(--blue);
-    box-shadow: 0 0 20px var(--blue-glow);
-    transform: scale(1.35);
+    box-shadow: 0 0 24px var(--blue-glow);
+    transform: scale(1.3);
 }
 
 .beat-dot.accent {
     background: var(--purple);
-    box-shadow: 0 0 24px var(--purple-glow);
-    transform: scale(1.55);
+    box-shadow: 0 0 28px var(--purple-glow);
+    transform: scale(1.5);
 }
 
 .metronome-controls {
@@ -1817,7 +1825,7 @@ body::before {
     }
 
     .bpm-value {
-        font-size: 3.8rem;
+        font-size: 4.2rem;
         letter-spacing: -2px;
     }
 
@@ -1840,11 +1848,15 @@ body::before {
     }
 
     .headstock-string {
-        padding: 4px 6px;
-        gap: 3px;
+        padding: 8px 8px;
+        gap: 5px;
     }
 
     .string-note-display {
+        font-size: 0.9rem;
+    }
+
+    .string-number {
         font-size: 0.8rem;
     }
 
@@ -1853,7 +1865,7 @@ body::before {
     }
 
     .string-play-btn {
-        padding: 4px 8px;
+        padding: 5px 8px;
     }
 
     .string-play-btn .play-label {
@@ -1888,8 +1900,8 @@ body::before {
     }
 
     .beat-dot {
-        width: 28px;
-        height: 28px;
+        width: 32px;
+        height: 32px;
     }
 
     .bpm-btn {
@@ -1986,13 +1998,12 @@ body::before {
     }
 
     .headstock-string {
-        padding: 6px 8px;
-        gap: 5px;
+        padding: 10px 10px;
+        gap: 6px;
     }
 
     .string-freq {
-        font-size: 0.58rem;
-        min-width: 42px;
+        display: none;
     }
 
     .headstock-neck {
@@ -2124,24 +2135,24 @@ body::before {
     }
 
     .bpm-value {
-        font-size: 3.2rem;
+        font-size: 3.6rem;
     }
 
     .metronome-display {
-        margin-bottom: 8px;
+        margin-bottom: 10px;
     }
 
     .beat-visual {
-        margin-bottom: 8px;
+        margin-bottom: 10px;
     }
 
     .beat-dot {
-        width: 26px;
-        height: 26px;
+        width: 28px;
+        height: 28px;
     }
 
     .panel-inner {
-        padding: 8px;
+        padding: 10px;
     }
 
     .chord-selector {
@@ -2150,12 +2161,12 @@ body::before {
     }
 
     .tuner-mic-section {
-        padding: 8px;
-        margin-top: 4px;
+        padding: 10px;
+        margin-top: 10px;
     }
 
     .headstock-string {
-        padding: 3px 6px;
+        padding: 6px 6px;
     }
 
     .string-freq {
