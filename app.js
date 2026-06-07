@@ -35,7 +35,7 @@ const TAG_CLASSES = ['root','third','fifth','seventh','ninth','eleventh'];
 const AudioEngine = {
   _ctx:null,
   get ctx(){ if(!this._ctx) this._ctx=new(window.AudioContext||window.webkitAudioContext)(); if(this._ctx.state==='suspended') this._ctx.resume(); return this._ctx; },
-  playTone(f,d,vl,dur){vl=vl||0.3;dur=dur||1.5;const c=this.ctx,o=c.createOscillator(),g=c.createGain();o.type=v||'sine';o.frequency.value=f;g.gain.setValueAtTime(vl,c.currentTime);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+dur);o.connect(g);g.connect(c.destination);o.start(c.currentTime);o.stop(c.currentTime+dur);},
+  playTone(f,dur,type,vl){vl=vl||0.3;dur=dur||1.5;const c=this.ctx,o=c.createOscillator(),g=c.createGain();o.type=type||'sine';o.frequency.value=f;g.gain.setValueAtTime(vl,c.currentTime);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+dur);o.connect(g);g.connect(c.destination);o.start(c.currentTime);o.stop(c.currentTime+dur);},
   getFretFreq(si,f){return OPEN_FREQS[si]*Math.pow(2,f/12);},
   playFretSound(si,f){this.playTone(this.getFretFreq(si,f),1.8,'triangle',0.25);},
   scheduleMetronomeBeat(ctx,time,idx,soundType,bpm){
@@ -434,7 +434,6 @@ function initChordFinder(){
 
   function handleFretTap(cx,cy){
     const{clickedString:cs,clickedFret:cf}=getStringAndFret(cx,cy);
-    console.log('handleFretTap',cx,cy,'→ string',cs,'fret',cf,'mode',currentMode);
     if(cs<0)return;
     lastTapTime=Date.now();lastTapString=cs;lastTapFret=cf;
     if(currentMode==='reverse')handleReverseTap(cs,cf);
@@ -488,7 +487,6 @@ function initChordFinder(){
 
   // --- Pointer事件（桌面端鼠标） ---
   canvas.addEventListener('pointerdown',e=>{
-    console.log('pointerdown',e.pointerType,e.clientX,e.clientY);
     if(touchActive)return;
     if(e.pointerType==='touch')return;
     const c=canvasCoords(e);ptrStartX=c.x;ptrStartY=c.y;ptrStartTime=Date.now();ptrMoved=false;ptrHorizontal=false;
@@ -523,7 +521,6 @@ function initChordFinder(){
 
   // 兜底：直接 click 事件处理
   canvas.addEventListener('click',e=>{
-    console.log('click on canvas',e.clientX,e.clientY,Date.now());
     if(touchActive)return;
     if(e.pointerType==='touch'||e.detail===0)return;
     const dur=Date.now()-lastTapTime;
