@@ -770,8 +770,8 @@ body::before {
 .headstock-string {
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 8px 10px;
+    gap: 8px;
+    padding: 10px 8px;
     position: relative;
     transition: all var(--duration-normal) var(--ease-out);
     border-radius: var(--radius-sm);
@@ -780,14 +780,10 @@ body::before {
     cursor: pointer;
 }
 
-/* 左列弦靠右（靠近中间） */
-.headstock-left .headstock-string {
-    flex-direction: row;
-}
-
-/* 右列弦靠左（靠近中间） */
+/* 统一为 row，试听按钮都在最右侧，左右对齐 */
+.headstock-left .headstock-string,
 .headstock-right .headstock-string {
-    flex-direction: row-reverse;
+    flex-direction: row;
 }
 
 .headstock-string:hover {
@@ -859,14 +855,8 @@ body::before {
     flex: 0 0 auto;
 }
 
-/* 左列：文本靠右（靠近琴颈） */
-.headstock-left .string-info {
-    flex-direction: row-reverse;
-    text-align: right;
-    justify-content: flex-start;
-}
-
-/* 右列：文本靠左（靠近琴颈） */
+/* 统一文本方向 */
+.headstock-left .string-info,
 .headstock-right .string-info {
     flex-direction: row;
     text-align: left;
@@ -983,7 +973,7 @@ body::before {
     display: flex;
     align-items: center;
     gap: 4px;
-    padding: 5px 10px;
+    padding: 5px 8px;
     border: none;
     background: var(--fill-primary);
     color: var(--blue-light);
@@ -1001,8 +991,8 @@ body::before {
 }
 
 .string-play-btn svg {
-    width: 14px;
-    height: 14px;
+    width: 12px;
+    height: 12px;
 }
 
 .string-play-btn:hover {
