@@ -9,7 +9,7 @@
     <meta name="format-detection" content="telephone=no">
     <link rel="manifest" href="manifest.json">
     <title>吉他学习助手</title>
-    <link rel="stylesheet" href="styles.css?v=10">
+    <link rel="stylesheet" href="styles.css?v=11">
 </head>
 <body>
     <!-- Vibe Coding 手势动画层 -->
@@ -121,7 +121,8 @@
                         <div class="reverse-chord-hint" id="reverseHint" style="display:none">点击指板上的品位来标记按弦位置</div>
                         <div class="chord-diagram-scroll-container" id="fretboardScrollContainer">
                         <div class="chord-diagram-container">
-                            <canvas id="chordCanvas" ontouchstart=""></canvas>
+                            <canvas id="chordCanvas"></canvas>
+                            <div id="touchLayer" class="touch-layer"></div>
                         </div>
                     </div>
                     <div class="strum-hint" id="strumHint">↕ 滑动指板浏览更多品位 · 水平拖拽扫弦</div>
@@ -328,6 +329,6 @@
         </main>
     </div>
 
-    <script src="app.js?v=11"></script>
+    <script src="app.js?v=12"></script>
 </body>
 </html>

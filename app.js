@@ -230,6 +230,7 @@ function initChordFinder(){
   const chordNameEl=document.getElementById('chordName'),notesEl=document.getElementById('chordNotesComposition');
   const intervalsEl=document.getElementById('chordIntervals'),tagsEl=document.getElementById('chordNoteTags');
   const canvas=document.getElementById('chordCanvas'),chordSelector=document.getElementById('chordSelector');
+  const touchLayer=document.getElementById('touchLayer'); // 透明触摸层，覆盖canvas接收事件
   const reverseHint=document.getElementById('reverseHint'),modeTabs=document.getElementById('chordModeTabs');
   const scrollContainer=document.getElementById('fretboardScrollContainer'),strumHint=document.getElementById('strumHint');
   const voicingNav=document.getElementById('voicingNav'),voicingLabel=document.getElementById('voicingLabel');
@@ -380,9 +381,9 @@ function initChordFinder(){
     progTimer=setTimeout(()=>playProgChord(idx+1),interval);
   }
 
-  // ---- 坐标转换 ----
+  // ---- 坐标转换（基于touchLayer，因为事件从touchLayer来，canvas和touchLayer完全重叠） ----
   function canvasCoords(e){
-    const rect=canvas.getBoundingClientRect();
+    const rect=touchLayer.getBoundingClientRect();
     const sx=canvas.width/(rect.width||1),sy=canvas.height/(rect.height||1);
     let cx,cy;
     if(e.touches&&e.touches.length>0){cx=e.touches[0].clientX;cy=e.touches[0].clientY;}
@@ -440,8 +441,8 @@ function initChordFinder(){
     else if(typeof cf==='number'&&cf>=0)AudioEngine.playFretSound(cs,cf);
   }
 
-  // --- 触摸事件（移动端最可靠的方式） ---
-  canvas.addEventListener('touchstart',e=>{
+  // --- 触摸事件（绑定到透明层，绕过微信X5对canvas的拦截） ---
+  touchLayer.addEventListener('touchstart',e=>{
     if(e.touches.length!==1)return;
     const t=e.touches[0],c=canvasCoords(t);
     ptrStartX=c.x;ptrStartY=c.y;ptrStartTime=Date.now();ptrMoved=false;ptrHorizontal=false;
@@ -449,11 +450,11 @@ function initChordFinder(){
     strumHint.classList.add('active');
   },{passive:true});
 
-  canvas.addEventListener('touchmove',e=>{
+  touchLayer.addEventListener('touchmove',e=>{
     if(!isStrumming||!touchActive||e.touches.length!==1)return;
     const t=e.touches[0],c=canvasCoords(t);
     const dx=Math.abs(c.x-ptrStartX),dy=Math.abs(c.y-ptrStartY);
-    if(dx+dy>16)ptrMoved=true; // 阈值加大，避免手指轻微抖动误触
+    if(dx+dy>16)ptrMoved=true;
     if(dx>18&&dx>dy*1.6){ptrHorizontal=true;
       e.preventDefault(); // 横向扫弦阻止滚动
       const{clickedString}=getStringAndFret(c.x,c.y);
@@ -463,43 +464,39 @@ function initChordFinder(){
     }
   },{passive:false});
 
-  canvas.addEventListener('touchend',e=>{
+  touchLayer.addEventListener('touchend',e=>{
     if(!isStrumming||!touchActive)return;
     isStrumming=false;touchActive=false;strumHint.classList.remove('active');
     const dur=Date.now()-ptrStartTime;
-    // 安全获取changedTouches（某些浏览器touchend中touches已空）
     const ct=(e.changedTouches&&e.changedTouches.length>0)?e.changedTouches[0]:null;
     const c=ct?canvasCoords(ct):{x:ptrStartX,y:ptrStartY};
-    // 横向扫弦
     if(strumTouched.size>=2&&ptrHorizontal){
       playStrum(Array.from(strumTouched),c.y-ptrStartY>0?'down':'up');
       return;
     }
-    // 轻点判定：总移动距离小 且 时间短（不依赖ptrMoved状态，因为微信X5可能不触发touchmove）
     const totalDx=Math.abs(c.x-ptrStartX),totalDy=Math.abs(c.y-ptrStartY);
     if(totalDx+totalDy<36&&dur<450){
       handleFretTap(c.x,c.y);
     }
   });
 
-  canvas.addEventListener('touchcancel',()=>{
+  touchLayer.addEventListener('touchcancel',()=>{
     isStrumming=false;touchActive=false;strumHint.classList.remove('active');
     const dur=Date.now()-ptrStartTime;
-    // touchcancel也尝试处理轻点（微信X5常在短时触摸后触发cancel）
     if(dur<450){
       handleFretTap(ptrStartX,ptrStartY);
     }
   });
 
   // --- Pointer事件（桌面端鼠标支持） ---
-  canvas.addEventListener('pointerdown',e=>{
-    if(touchActive)return; // 触摸优先
-    if(e.pointerType==='touch')return; // 移动端touch事件已处理
+  touchLayer.addEventListener('pointerdown',e=>{
+    if(touchActive)return;
+    if(e.pointerType==='touch')return;
     const c=canvasCoords(e);ptrStartX=c.x;ptrStartY=c.y;ptrStartTime=Date.now();ptrMoved=false;ptrHorizontal=false;
     isStrumming=true;strumTouched.clear();strumLast=0;strumHint.classList.add('active');
   });
 
-  canvas.addEventListener('pointermove',e=>{
+  touchLayer.addEventListener('pointermove',e=>{
     if(touchActive||e.pointerType==='touch')return;
     if(!isStrumming)return;
     const c=canvasCoords(e),dx=Math.abs(c.x-ptrStartX),dy=Math.abs(c.y-ptrStartY);
@@ -512,7 +509,7 @@ function initChordFinder(){
     }
   });
 
-  canvas.addEventListener('pointerup',e=>{
+  touchLayer.addEventListener('pointerup',e=>{
     if(touchActive||e.pointerType==='touch')return;
     if(!isStrumming)return;isStrumming=false;strumHint.classList.remove('active');
     const c=canvasCoords(e);
@@ -525,16 +522,16 @@ function initChordFinder(){
     if(isTap&&dur<400)handleFretTap(c.x,c.y);
   });
 
-  canvas.addEventListener('click',e=>{
-    if(touchActive)return; // 触摸已处理
-    if(e.pointerType==='touch'||e.detail===0)return; // 移动端touch事件已通过touchend处理
+  touchLayer.addEventListener('click',e=>{
+    if(touchActive)return;
+    if(e.pointerType==='touch'||e.detail===0)return;
     const dur=Date.now()-lastTapTime;
     if(dur<500&&lastTapString>=0)return;
     const c=canvasCoords(e);
     handleFretTap(c.x,c.y);
   });
 
-  canvas.addEventListener('contextmenu',e=>e.preventDefault());
+  touchLayer.addEventListener('contextmenu',e=>e.preventDefault());
 
   function resetReverse(){reverseFrets=Array(6).fill(null);
     chordNameEl.innerHTML='<span style="color:var(--text-tertiary)">点击指板</span>';

@@ -519,12 +519,23 @@ body::before {
     cursor: pointer;
     display: block;
     filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.3));
-    pointer-events: auto;
-    touch-action: manipulation; /* 微信 X5 内核中 pan-y 会吞掉 touchend，用 manipulation 保证轻点可用 */
-    -webkit-touch-callout: none; /* 阻止微信长按弹出菜单 */
+    pointer-events: none; /* 触摸事件交给上方的透明层处理，canvas 只负责渲染 */
     user-select: none;
     -webkit-user-select: none;
     max-width: 100%;
+}
+
+/* 透明触摸层 - 覆盖在 canvas 上接收触摸事件，绕过微信 X5 内核对 canvas 的拦截 */
+.touch-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: transparent;
+    pointer-events: auto;
+    touch-action: manipulation;
+    z-index: 2;
 }
 
 /* 扫弦提示 */
