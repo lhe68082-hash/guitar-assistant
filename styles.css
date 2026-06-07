@@ -74,22 +74,21 @@
 html {
     font-size: 16px;
     -webkit-text-size-adjust: 100%;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
     height: 100%;
+    overflow: hidden;
 }
 
 body {
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
     background: var(--bg-root);
     color: var(--text-primary);
-    min-height: 100vh;
-    min-height: 100dvh;
     line-height: 1.47059;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    overflow-x: hidden;
-    overflow-y: visible;
+    height: 100%;
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
 }
 
 /* 背景渐变装饰 */
@@ -179,40 +178,34 @@ body::before {
     z-index: 1;
     max-width: 480px;
     margin: 0 auto;
-    padding: 0 16px env(safe-area-inset-bottom, 40px);
-    min-height: 100vh;
-    min-height: 100dvh;
+    padding: 0 12px 0;
+    height: 100%;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
 }
 
 /* ============ 头部 ============ */
 .header {
-    padding: 16px 0 0;
+    padding: 8px 0 0;
     text-align: center;
-    position: sticky;
-    top: 0;
+    flex-shrink: 0;
     z-index: 10;
-    background: rgba(0, 0, 0, 0.8);
-    backdrop-filter: saturate(180%) blur(20px);
-    -webkit-backdrop-filter: saturate(180%) blur(20px);
-    margin: 0 -16px;
-    padding: max(16px, env(safe-area-inset-top)) 16px 0;
 }
 
 .logo {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
-    margin-bottom: 14px;
+    gap: 8px;
+    margin-bottom: 8px;
 }
 
 .logo-icon {
-    width: 38px;
-    height: 38px;
+    width: 28px;
+    height: 28px;
     background: linear-gradient(135deg, var(--blue), var(--purple));
-    border-radius: 10px;
+    border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -220,19 +213,24 @@ body::before {
     animation: logoPulse 3s ease-in-out infinite;
 }
 
-@keyframes logoPulse {
-    0%, 100% { box-shadow: 0 2px 12px rgba(10, 132, 255, 0.3); }
-    50% { box-shadow: 0 2px 24px rgba(191, 90, 242, 0.5); }
+.logo-icon svg {
+    width: 16px;
+    height: 16px;
 }
 
 .logo h1 {
-    font-size: 1.35rem;
+    font-size: 1.1rem;
     font-weight: 700;
     letter-spacing: -0.3px;
     background: linear-gradient(135deg, var(--text-primary) 30%, var(--teal) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+}
+
+@keyframes logoPulse {
+    0%, 100% { box-shadow: 0 2px 12px rgba(10, 132, 255, 0.3); }
+    50% { box-shadow: 0 2px 24px rgba(191, 90, 242, 0.5); }
 }
 
 /* ============ 分段控制器导航 ============ */
@@ -249,12 +247,12 @@ body::before {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 5px;
-    padding: 9px 4px;
+    gap: 4px;
+    padding: 7px 4px;
     border: none;
     background: transparent;
     color: var(--text-secondary);
-    font-size: 0.8rem;
+    font-size: 0.72rem;
     font-weight: 500;
     border-radius: 8px;
     cursor: pointer;
@@ -281,7 +279,10 @@ body::before {
 /* ============ 主内容区 ============ */
 .main-content {
     flex: 1;
-    margin-top: 16px;
+    overflow: hidden;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
 }
 
 .tab-panel {
@@ -289,7 +290,11 @@ body::before {
 }
 
 .tab-panel.active {
-    display: block;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+    min-height: 0;
     animation: fadeSlideIn var(--duration-slow) var(--spring);
 }
 
@@ -301,24 +306,30 @@ body::before {
 .panel-inner {
     background: var(--bg-surface);
     border-radius: var(--radius-xl);
-    padding: 20px;
+    padding: 10px 12px;
     border: 0.5px solid var(--separator);
     box-shadow: var(--shadow-sm);
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 0;
 }
 
 /* ============ 和弦查询器 ============ */
 .chord-selector {
     display: flex;
     flex-direction: column;
-    gap: 14px;
-    margin-bottom: 20px;
+    gap: 8px;
+    margin-bottom: 8px;
+    flex-shrink: 0;
 }
 
 .select-group label {
     display: block;
-    font-size: 0.7rem;
+    font-size: 0.62rem;
     color: var(--text-tertiary);
-    margin-bottom: 8px;
+    margin-bottom: 5px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.8px;
@@ -328,16 +339,16 @@ body::before {
 .note-buttons {
     display: grid;
     grid-template-columns: repeat(6, 1fr);
-    gap: 4px;
+    gap: 3px;
 }
 
 .note-btn {
-    height: 38px;
+    height: 30px;
     border: none;
     background: var(--fill-secondary);
     color: var(--text-secondary);
-    border-radius: var(--radius-sm);
-    font-size: 0.78rem;
+    border-radius: 6px;
+    font-size: 0.7rem;
     font-weight: 600;
     cursor: pointer;
     transition: all var(--duration-fast) var(--ease-out);
@@ -365,16 +376,16 @@ body::before {
 }
 
 .type-btn {
-    padding: 10px 8px;
+    padding: 7px 6px;
     border: none;
     background: var(--fill-secondary);
     color: var(--text-secondary);
-    border-radius: var(--radius-sm);
-    font-size: 0.7rem;
+    border-radius: 6px;
+    font-size: 0.65rem;
     font-weight: 500;
     cursor: pointer;
     transition: all var(--duration-fast) var(--ease-out);
-    line-height: 1.3;
+    line-height: 1.2;
 }
 
 .type-btn:hover {
@@ -392,35 +403,42 @@ body::before {
 /* 和弦展示区 */
 .chord-display {
     text-align: center;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 0;
 }
 
 .chord-name-display {
-    font-size: 1.4rem;
+    font-size: 0.95rem;
     font-weight: 700;
     color: var(--text-primary);
-    margin-bottom: 4px;
+    margin-bottom: 2px;
     letter-spacing: -0.3px;
+    flex-shrink: 0;
 }
 
 .chord-name-display .chord-type-badge {
     display: inline-block;
-    font-size: 0.65rem;
+    font-size: 0.58rem;
     font-weight: 600;
     background: var(--purple);
     color: #fff;
-    padding: 2px 10px;
+    padding: 1px 7px;
     border-radius: var(--radius-full);
-    margin-left: 8px;
+    margin-left: 5px;
     vertical-align: middle;
 }
 
 /* 反向和弦结果提示 */
 .reverse-chord-hint {
-    font-size: 0.68rem;
+    font-size: 0.6rem;
     color: var(--text-tertiary);
-    margin-bottom: 10px;
+    margin-bottom: 6px;
     font-weight: 500;
     opacity: 0.8;
+    flex-shrink: 0;
 }
 
 /* 模式切换标签 */
@@ -428,16 +446,17 @@ body::before {
     display: flex;
     justify-content: center;
     gap: 4px;
-    margin-bottom: 12px;
+    margin-bottom: 8px;
+    flex-shrink: 0;
 }
 
 .chord-mode-tab {
-    padding: 5px 14px;
+    padding: 4px 12px;
     border: none;
     background: var(--fill-secondary);
     color: var(--text-tertiary);
     border-radius: var(--radius-full);
-    font-size: 0.68rem;
+    font-size: 0.62rem;
     font-weight: 600;
     cursor: pointer;
     transition: all var(--duration-fast) var(--ease-out);
@@ -454,46 +473,44 @@ body::before {
     font-weight: 700;
 }
 
-/* 指板滚动容器 */
+/* 指板滚动容器 - 竖向滑动 */
 .chord-diagram-scroll-container {
-    margin-bottom: 4px;
     position: relative;
-    overflow-x: auto;
-    overflow-y: hidden;
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
-    scrollbar-width: thin;
-    scrollbar-color: rgba(255,255,255,0.15) transparent;
+    scrollbar-width: none;
     border-radius: var(--radius-lg);
     background: var(--bg-elevated);
     user-select: none;
     -webkit-user-select: none;
     -webkit-tap-highlight-color: transparent;
-    /* 滚动条区域保留交互 */
+    min-height: 0;
+    -ms-overflow-style: none;
 }
 
 .chord-diagram-scroll-container::-webkit-scrollbar {
-    height: 5px;
+    display: none;
 }
 
-.chord-diagram-scroll-container::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-.chord-diagram-scroll-container::-webkit-scrollbar-thumb {
-    background: rgba(255,255,255,0.2);
-    border-radius: 3px;
-}
-
-.chord-diagram-scroll-container::-webkit-scrollbar-thumb:hover {
-    background: rgba(255,255,255,0.35);
+/* 顶部渐隐提示 */
+.chord-diagram-scroll-container::before {
+    content: "";
+    position: sticky;
+    top: 0;
+    display: block;
+    height: 4px;
+    background: linear-gradient(to bottom, rgba(44,44,46,0.6), transparent);
+    z-index: 2;
+    pointer-events: none;
+    flex-shrink: 0;
 }
 
 .chord-diagram-container {
     display: flex;
-    justify-content: flex-start;
+    justify-content: center;
     position: relative;
-    min-width: max-content;
-    /* 让容器本身不拦截事件，只由 canvas 处理 */
     pointer-events: none;
 }
 
@@ -501,21 +518,22 @@ body::before {
     background: transparent;
     cursor: pointer;
     display: block;
-    filter: drop-shadow(0 4px 16px rgba(0, 0, 0, 0.3));
+    filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.3));
     pointer-events: auto;
-    touch-action: none; /* 阻止浏览器默认手势，由 JS 完全接管 */
-    max-width: none; /* 允许 canvas 溢出滚动 */
+    touch-action: pan-y; /* 允许竖向滚动穿透到容器 */
+    max-width: 100%;
 }
 
 /* 扫弦提示 */
 .strum-hint {
-    font-size: 0.6rem;
+    font-size: 0.55rem;
     color: var(--text-quaternary);
     text-align: center;
-    margin-bottom: 10px;
+    margin: 4px 0;
     font-weight: 500;
     letter-spacing: 0.5px;
     transition: color 0.2s ease;
+    flex-shrink: 0;
 }
 
 .strum-hint.active {
@@ -525,51 +543,55 @@ body::before {
 .chord-info {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 8px;
+    gap: 5px;
+    flex-shrink: 0;
 }
 
 .chord-info-card {
     background: var(--fill-secondary);
     border-radius: var(--radius-md);
-    padding: 14px;
+    padding: 8px 10px;
     text-align: left;
 }
 
 .chord-info-card .info-label {
     display: block;
-    font-size: 0.65rem;
+    font-size: 0.55rem;
     color: var(--text-tertiary);
     text-transform: uppercase;
     letter-spacing: 0.6px;
-    margin-bottom: 6px;
+    margin-bottom: 3px;
     font-weight: 600;
 }
 
 .chord-info-card .info-value {
     display: block;
-    font-size: 0.85rem;
+    font-size: 0.68rem;
     font-weight: 500;
     color: var(--text-primary);
     letter-spacing: -0.2px;
+    word-break: break-all;
+    line-height: 1.3;
 }
 
 /* 和弦音符标签 */
 .chord-note-tags {
     display: flex;
-    gap: 6px;
-    margin-top: 14px;
+    gap: 4px;
+    margin: 6px 0;
     justify-content: center;
     flex-wrap: wrap;
+    flex-shrink: 0;
 }
 
 .chord-note-tag {
-    width: 40px;
-    height: 40px;
+    width: 30px;
+    height: 30px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.85rem;
+    font-size: 0.7rem;
     font-weight: 700;
     color: #fff;
 }
@@ -582,6 +604,8 @@ body::before {
 /* ============ 调音器 - 琴头样式 ============ */
 .tuner-panel {
     text-align: center;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 .tuner-header {
@@ -1030,6 +1054,8 @@ body::before {
 /* ============ 节拍器 ============ */
 .metronome-panel {
     text-align: center;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 .metronome-display {
@@ -1298,12 +1324,7 @@ body::before {
 /* 小屏手机 (iPhone SE / 320-374px) */
 @media (max-width: 374px) {
     .app-container {
-        padding: 0 10px env(safe-area-inset-bottom, 24px);
-    }
-
-    .header {
-        margin: 0 -10px;
-        padding: max(10px, env(safe-area-inset-top)) 10px 0;
+        padding: 0 8px 0;
     }
 
     .logo-icon {
@@ -1333,8 +1354,8 @@ body::before {
     }
 
     .note-btn {
-        height: 30px;
-        font-size: 0.68rem;
+        height: 26px;
+        font-size: 0.62rem;
     }
 
     .chord-type-buttons {
@@ -1342,8 +1363,8 @@ body::before {
     }
 
     .type-btn {
-        font-size: 0.64rem;
-        padding: 7px 4px;
+        font-size: 0.6rem;
+        padding: 5px 3px;
     }
 
     .bpm-value {
@@ -1444,12 +1465,7 @@ body::before {
 /* 中等手机 (iPhone 12/13/14/15/16 - 375-430px) */
 @media (min-width: 375px) and (max-width: 430px) {
     .app-container {
-        padding: 0 14px env(safe-area-inset-bottom, 32px);
-    }
-
-    .header {
-        margin: 0 -14px;
-        padding: max(14px, env(safe-area-inset-top)) 14px 0;
+        padding: 0 12px 0;
     }
 
     .logo h1 {
@@ -1467,8 +1483,8 @@ body::before {
     }
 
     .note-btn {
-        height: 34px;
-        font-size: 0.72rem;
+        height: 28px;
+        font-size: 0.68rem;
     }
 
     .chord-type-buttons {
@@ -1476,8 +1492,8 @@ body::before {
     }
 
     .type-btn {
-        font-size: 0.68rem;
-        padding: 8px 4px;
+        font-size: 0.62rem;
+        padding: 6px 4px;
     }
 
     .bpm-value {
@@ -1506,75 +1522,70 @@ body::before {
 /* 大屏手机 (431-600px) */
 @media (min-width: 431px) and (max-width: 600px) {
     .app-container {
-        padding: 0 16px env(safe-area-inset-bottom, 36px);
+        padding: 0 16px 0;
     }
 }
 
 /* 平板及以上 */
 @media (min-width: 601px) {
     .app-container {
-        padding: 0 20px env(safe-area-inset-bottom, 48px);
+        padding: 0 24px 0;
     }
 }
 
 /* 横屏手机适配 */
 @media (max-height: 500px) and (orientation: landscape) {
-    .header {
-        position: static;
-        backdrop-filter: none;
-        -webkit-backdrop-filter: none;
-    }
-
     .logo {
-        margin-bottom: 6px;
+        margin-bottom: 4px;
     }
 
     .logo-icon {
-        width: 28px;
-        height: 28px;
+        width: 24px;
+        height: 24px;
     }
 
     .logo h1 {
-        font-size: 1rem;
+        font-size: 0.9rem;
+    }
+
+    .logo-icon svg {
+        width: 14px;
+        height: 14px;
     }
 
     .nav-tab {
-        padding: 6px 2px;
-        font-size: 0.65rem;
+        padding: 5px 2px;
+        font-size: 0.6rem;
     }
 
     .bpm-value {
-        font-size: 3rem;
+        font-size: 2.5rem;
     }
 
     .metronome-display {
-        margin-bottom: 12px;
+        margin-bottom: 8px;
     }
 
     .beat-visual {
-        margin-bottom: 12px;
+        margin-bottom: 8px;
     }
 
     .panel-inner {
-        padding: 12px;
+        padding: 8px;
     }
 
     .chord-selector {
-        gap: 8px;
-        margin-bottom: 10px;
-    }
-
-    .chord-diagram-scroll-container {
-        max-height: 220px;
+        gap: 4px;
+        margin-bottom: 4px;
     }
 
     .tuner-mic-section {
-        padding: 10px;
-        margin-top: 8px;
+        padding: 8px;
+        margin-top: 4px;
     }
 
     .headstock-string {
-        padding: 4px 8px;
+        padding: 3px 6px;
     }
 
     .string-freq {
@@ -1582,7 +1593,7 @@ body::before {
     }
 
     .detected-freq {
-        font-size: 1.5rem;
+        font-size: 1.3rem;
     }
 }
 
@@ -1606,10 +1617,6 @@ body::before {
 
 /* 深色主题下系统滚动条隐藏（移动端） */
 @media (max-width: 600px) {
-    .chord-diagram-scroll-container {
-        -ms-overflow-style: none;
-    }
-
     .chord-diagram-scroll-container::-webkit-scrollbar {
         display: none;
     }

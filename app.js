@@ -446,82 +446,53 @@
         // 反向模式状态：用户点击指板构建的和弦 [stringIndex] = fret (null=未按, 0=空弦, "x"=静音)
         let reverseFrets = [null, null, null, null, null, null];
 
-        // ========== 画布布局常量（12品，自适应宽度） ==========
+        // ========== 画布布局常量（12品，竖向滚动） ==========
         const NUM_FRETS = 12;
         const NUM_STRINGS = 6;
 
-        // 基础尺寸常量（用于计算比例）
-        const BASE_LEFT_MARGIN = 50;
-        const BASE_TOP_MARGIN = 56;
-        const BASE_FRET_WIDTH = 40;
-        const BASE_STRING_SPACING = 44;
-        const BASE_FRET_HEIGHT = 42;
-        const BASE_PADDING = 16;
-
-        // 根据屏幕宽度动态计算缩放比例
-        function getLayoutScale() {
-            const containerWidth = scrollContainer ? scrollContainer.clientWidth : window.innerWidth;
-            const panelInner = document.querySelector(".panel-inner");
-            const panelPadding = panelInner ? parseInt(getComputedStyle(panelInner).paddingLeft) * 2 : 40;
-            const availableWidth = Math.min(containerWidth - panelPadding, 480);
-
-            // 基础画布宽度
-            const baseCanvasW = BASE_LEFT_MARGIN + (NUM_STRINGS - 1) * BASE_STRING_SPACING + BASE_PADDING * 2 + 8;
-
-            // 如果可用宽度足够，使用 1:1；否则缩放
-            if (availableWidth >= baseCanvasW) return 1;
-
-            // 缩放但确保不小于 0.6（太小看不清）
-            const scale = Math.max(0.6, availableWidth / baseCanvasW);
-            return scale;
-        }
-
+        // 根据容器宽度动态计算布局
         function getCanvasDimensions() {
-            const scale = getLayoutScale();
-            const leftMargin = Math.round(BASE_LEFT_MARGIN * scale);
-            const topMargin = Math.round(BASE_TOP_MARGIN * scale);
-            const fretWidth = Math.round(BASE_FRET_WIDTH * scale);
-            const stringSpacing = Math.round(BASE_STRING_SPACING * scale);
-            const fretHeight = Math.round(BASE_FRET_HEIGHT * scale);
-            const padding = Math.round(BASE_PADDING * scale);
+            const containerWidth = scrollContainer ? scrollContainer.clientWidth - 4 : 340;
+            const scale = Math.min(1, containerWidth / 340);
 
-            const w = leftMargin + (NUM_STRINGS - 1) * stringSpacing + padding * 2 + 8;
-            const h = topMargin + NUM_FRETS * fretHeight + 30;
+            const leftMargin = Math.round(38 * scale);
+            const topMargin = Math.round(46 * scale);
+            const stringSpacing = Math.round(44 * scale);
+            const fretHeight = Math.round(42 * scale);
+            const padding = Math.round(8 * scale);
 
-            return { scale, leftMargin, topMargin, fretWidth, stringSpacing, fretHeight, padding, w, h };
+            // 画布宽度填满容器，高度显示全部12品
+            const w = containerWidth;
+            const h = topMargin + NUM_FRETS * fretHeight + 20;
+
+            return { scale, leftMargin, topMargin, stringSpacing, fretHeight, padding, w, h };
         }
 
         // 当前布局尺寸（在渲染时动态更新）
         let currentLayout = getCanvasDimensions();
 
         // 初始化画布尺寸
-        canvas.width = currentLayout.w;
-        canvas.height = currentLayout.h;
-        canvas.style.width = currentLayout.w + "px";
-        canvas.style.height = currentLayout.h + "px";
-
-        // 监听窗口尺寸变化，重新计算布局
-        function updateCanvasSize() {
-            const newLayout = getCanvasDimensions();
-            if (newLayout.w !== currentLayout.w || newLayout.h !== currentLayout.h) {
-                currentLayout = newLayout;
-                canvas.width = currentLayout.w;
-                canvas.height = currentLayout.h;
-                canvas.style.width = currentLayout.w + "px";
-                canvas.style.height = currentLayout.h + "px";
-                // 重新渲染当前内容
-                if (currentMode === "query") {
-                    renderChord();
-                } else {
-                    renderReverseChord();
-                }
-            }
+        function initCanvasSize() {
+            currentLayout = getCanvasDimensions();
+            canvas.width = currentLayout.w;
+            canvas.height = currentLayout.h;
+            canvas.style.width = currentLayout.w + "px";
+            canvas.style.height = currentLayout.h + "px";
         }
+        initCanvasSize();
 
-        window.addEventListener("resize", updateCanvasSize);
-        window.addEventListener("orientationchange", () => {
-            setTimeout(updateCanvasSize, 200); // 等旋转完成
-        });
+        // 监听容器尺寸变化
+        if (window.ResizeObserver && scrollContainer) {
+            const ro = new ResizeObserver(() => {
+                const newLayout = getCanvasDimensions();
+                if (Math.abs(newLayout.w - currentLayout.w) > 2) {
+                    initCanvasSize();
+                    if (currentMode === "query") renderChord();
+                    else renderReverseChord();
+                }
+            });
+            ro.observe(scrollContainer);
+        }
 
         // ========== 扫弦状态 ==========
         let isStrumming = false;
@@ -551,11 +522,11 @@
                 chordSelector.style.display = "none";
                 reverseHint.style.display = "";
                 chordNameDisplay.innerHTML = '<span style="color: var(--text-tertiary);">点击指板</span>';
-                chordNotesComposition.textContent = "点击品位标记按弦 · 拖拽扫弦";
+                chordNotesComposition.textContent = "点击品位标记按弦 · 水平拖拽扫弦";
                 chordIntervals.textContent = "点击指板自动识别和弦";
                 chordNoteTags.innerHTML = "";
                 reverseFrets = [null, null, null, null, null, null];
-                drawChordDiagram(canvas, reverseFrets, "?", "点击指板推理", 0);
+                drawChordDiagram(canvas, reverseFrets, "?", "点击指板推理");
             }
         });
 
@@ -609,7 +580,7 @@
             let clickedString = -1;
             let clickedFret = -1;
 
-            // 弦的点击范围：以弦线为中心，±半个弦间距
+            // 弦的点击范围
             for (let s = 0; s < NUM_STRINGS; s++) {
                 const x = leftMargin + s * stringSpacing;
                 if (Math.abs(cx - x) < stringSpacing * 0.48) {
@@ -619,30 +590,16 @@
             }
 
             if (clickedString >= 0) {
-                let startFret = 1;
-                if (currentShape && Array.isArray(currentShape)) {
-                    let minF = 99;
-                    currentShape.forEach((f) => {
-                        if (f !== "x" && f !== null && f !== undefined && f !== 0 && f < minF) minF = f;
-                    });
-                    if (minF > 4 && minF !== 99) startFret = minF;
-                }
+                // 静音区域（品丝上方）
+                const muteZoneTop = topMargin - Math.round(38 * scale);
+                const openZoneTop = topMargin - Math.round(22 * scale);
 
-                // 空弦/静音区域边界（按比例缩放）
-                const openZoneTop = topMargin - Math.round(30 * scale);
-                const muteZoneTop = topMargin - Math.round(45 * scale);
-
-                // 静音区域
                 if (cy >= muteZoneTop && cy < openZoneTop) {
                     clickedFret = "x";
-                }
-                // 空弦区域（指板顶部以上）
-                else if (cy >= openZoneTop && cy < topMargin) {
+                } else if (cy >= openZoneTop && cy < topMargin) {
                     clickedFret = 0;
-                }
-                // 品位区域
-                else if (cy >= topMargin && cy < topMargin + NUM_FRETS * fretHeight) {
-                    clickedFret = Math.floor((cy - topMargin) / fretHeight) + startFret;
+                } else if (cy >= topMargin && cy < topMargin + NUM_FRETS * fretHeight) {
+                    clickedFret = Math.floor((cy - topMargin) / fretHeight) + 1;
                     if (clickedFret > 12) clickedFret = 12;
                 }
             }
@@ -695,13 +652,10 @@
             });
         }
 
-        // ========== 鼠标/触摸事件（点击 + 扫弦） ==========
+        // ========== 鼠标/触摸事件（点击 + 扫弦，竖向滑动穿透） ==========
 
-        // pointerdown: 记录起始位置，阻止默认防止滚动容器拦截
+        // pointerdown: 记录起始位置
         canvas.addEventListener("pointerdown", (e) => {
-            e.preventDefault();
-            // 确保布局是最新的（处理 orientationchange 延迟）
-            updateCanvasSize();
             const coords = canvasCoords(e);
             strumStartX = coords.x;
             strumStartY = coords.y;
@@ -711,131 +665,124 @@
             strumTouchedStrings.clear();
             strumLastSweep = 0;
             clickMoved = false;
-            canvas.setPointerCapture(e.pointerId);
             strumHint.classList.add("active");
         });
 
-        // 兼容不支持 pointer capture 的触摸设备
-        canvas.addEventListener("touchstart", (e) => {
-            // 如果 pointerdown 已经处理过了，跳过
-            if (isStrumming) return;
-            e.preventDefault();
-            updateCanvasSize();
-            const touch = e.touches[0];
-            const coords = canvasCoords(touch);
-            strumStartX = coords.x;
-            strumStartY = coords.y;
-            strumCurrentX = coords.x;
-            strumCurrentY = coords.y;
-            isStrumming = true;
-            strumTouchedStrings.clear();
-            strumLastSweep = 0;
-            clickMoved = false;
-            strumHint.classList.add("active");
-        }, { passive: false });
-
-        // pointermove: 检测扫弦
+        // pointermove: 水平拖拽=扫弦，竖向=穿透给容器滚动
         canvas.addEventListener("pointermove", (e) => {
             if (!isStrumming) return;
-            e.preventDefault();
             const coords = canvasCoords(e);
-            const dx = coords.x - strumStartX;
-            const dy = coords.y - strumStartY;
-            const totalDist = Math.sqrt(dx * dx + dy * dy);
+            const dx = Math.abs(coords.x - strumStartX);
+            const dy = Math.abs(coords.y - strumStartY);
+            const totalDist = dx + dy;
 
-            // 判断是否移动了足够距离才认为是扫弦
             if (totalDist > 8) clickMoved = true;
 
-            strumCurrentX = coords.x;
-            strumCurrentY = coords.y;
-
-            // 检测当前鼠标下的弦
-            const { clickedString } = getStringAndFret(coords.x, coords.y, getFretsForShape());
-            if (clickedString >= 0 && !strumTouchedStrings.has(clickedString)) {
-                const now = Date.now();
-                if (now - strumLastSweep > STRUM_COOLDOWN || strumTouchedStrings.size === 0) {
-                    strumTouchedStrings.add(clickedString);
-                    strumLastSweep = now;
+            // 只有水平拖拽显著时才拦截作为扫弦
+            if (dx > 20 && dx > dy * 1.5) {
+                e.preventDefault();
+                strumCurrentX = coords.x;
+                strumCurrentY = coords.y;
+                const { clickedString } = getStringAndFret(coords.x, coords.y, getFretsForShape());
+                if (clickedString >= 0 && !strumTouchedStrings.has(clickedString)) {
+                    const now = Date.now();
+                    if (now - strumLastSweep > STRUM_COOLDOWN || strumTouchedStrings.size === 0) {
+                        strumTouchedStrings.add(clickedString);
+                        strumLastSweep = now;
+                    }
                 }
             }
+            // 竖向移动不拦截 → 容器自然滚动
         });
 
-        // touchmove 兼容
-        canvas.addEventListener("touchmove", (e) => {
-            if (!isStrumming) return;
-            e.preventDefault();
-            const touch = e.touches[0];
-            const coords = canvasCoords(touch);
-            const dx = coords.x - strumStartX;
-            const dy = coords.y - strumStartY;
-            const totalDist = Math.sqrt(dx * dx + dy * dy);
-
-            if (totalDist > 8) clickMoved = true;
-
-            strumCurrentX = coords.x;
-            strumCurrentY = coords.y;
-
-            const { clickedString } = getStringAndFret(coords.x, coords.y, getFretsForShape());
-            if (clickedString >= 0 && !strumTouchedStrings.has(clickedString)) {
-                const now = Date.now();
-                if (now - strumLastSweep > STRUM_COOLDOWN || strumTouchedStrings.size === 0) {
-                    strumTouchedStrings.add(clickedString);
-                    strumLastSweep = now;
-                }
-            }
-        }, { passive: false });
-
-        // pointerup: 结束扫弦或触发点击
+        // pointerup: 结束交互
         canvas.addEventListener("pointerup", (e) => {
             if (!isStrumming) return;
-            e.preventDefault();
-            finishInteraction(e);
-        });
-
-        // touchend 兼容
-        canvas.addEventListener("touchend", (e) => {
-            if (!isStrumming) return;
-            e.preventDefault();
-            // 传入原始事件，canvasCoords 会处理 changedTouches
-            finishInteraction(e);
-        });
-
-        canvas.addEventListener("touchcancel", (e) => {
-            if (!isStrumming) return;
-            isStrumming = false;
-            strumHint.classList.remove("active");
-        });
-
-        function finishInteraction(e) {
             isStrumming = false;
             strumHint.classList.remove("active");
 
             let coords;
-            try {
-                coords = canvasCoords(e);
-            } catch (_) {
-                // 坐标可能已失效
-                try { canvas.releasePointerCapture(e.pointerId); } catch (_e) {}
-                return;
-            }
-
-            const { clickedString, clickedFret } = getStringAndFret(coords.x, coords.y, getFretsForShape());
+            try { coords = canvasCoords(e); } catch (_) { return; }
 
             if (strumTouchedStrings.size >= 2) {
-                // 扫弦：播放扫过的弦
+                // 扫弦播放
                 const dy = strumCurrentY - strumStartY;
                 const direction = dy > 0 ? "down" : "up";
                 playStrum(Array.from(strumTouchedStrings), direction);
-            } else if (!clickMoved && clickedString >= 0) {
-                // 点击：单个弦的交互
-                handleClick(clickedString, clickedFret);
-            } else if (strumTouchedStrings.size === 1 && clickedString >= 0) {
-                // 只扫到一根弦，当做点击处理
-                handleClick(clickedString, clickedFret);
+            } else if (!clickMoved) {
+                // 点击
+                const { clickedString, clickedFret } = getStringAndFret(coords.x, coords.y, getFretsForShape());
+                if (clickedString >= 0) handleClick(clickedString, clickedFret);
+            } else if (strumTouchedStrings.size === 1) {
+                // 只扫到一根弦，当作点击
+                const { clickedString, clickedFret } = getStringAndFret(coords.x, coords.y, getFretsForShape());
+                if (clickedString >= 0) handleClick(clickedString, clickedFret);
             }
 
             try { canvas.releasePointerCapture(e.pointerId); } catch (_e) {}
-        }
+        });
+
+        // touch 兼容事件
+        canvas.addEventListener("touchstart", (e) => {
+            if (isStrumming) return;
+            const touch = e.touches[0];
+            const coords = canvasCoords(touch);
+            strumStartX = coords.x;
+            strumStartY = coords.y;
+            strumCurrentX = coords.x;
+            strumCurrentY = coords.y;
+            isStrumming = true;
+            strumTouchedStrings.clear();
+            strumLastSweep = 0;
+            clickMoved = false;
+            strumHint.classList.add("active");
+        }, { passive: true });
+
+        canvas.addEventListener("touchmove", (e) => {
+            if (!isStrumming) return;
+            const touch = e.touches[0];
+            const coords = canvasCoords(touch);
+            const dx = Math.abs(coords.x - strumStartX);
+            const dy = Math.abs(coords.y - strumStartY);
+            const totalDist = dx + dy;
+
+            if (totalDist > 8) clickMoved = true;
+
+            if (dx > 20 && dx > dy * 1.5) {
+                e.preventDefault();
+                strumCurrentX = coords.x;
+                strumCurrentY = coords.y;
+                const { clickedString } = getStringAndFret(coords.x, coords.y, getFretsForShape());
+                if (clickedString >= 0 && !strumTouchedStrings.has(clickedString)) {
+                    const now = Date.now();
+                    if (now - strumLastSweep > STRUM_COOLDOWN || strumTouchedStrings.size === 0) {
+                        strumTouchedStrings.add(clickedString);
+                        strumLastSweep = now;
+                    }
+                }
+            }
+        }, { passive: false });
+
+        canvas.addEventListener("touchend", (e) => {
+            if (!isStrumming) return;
+            isStrumming = false;
+            strumHint.classList.remove("active");
+
+            let coords;
+            try { coords = canvasCoords(e); } catch (_) { return; }
+
+            if (strumTouchedStrings.size >= 2) {
+                const dy = strumCurrentY - strumStartY;
+                const direction = dy > 0 ? "down" : "up";
+                playStrum(Array.from(strumTouchedStrings), direction);
+            } else if (!clickMoved) {
+                const { clickedString, clickedFret } = getStringAndFret(coords.x, coords.y, getFretsForShape());
+                if (clickedString >= 0) handleClick(clickedString, clickedFret);
+            } else if (strumTouchedStrings.size === 1) {
+                const { clickedString, clickedFret } = getStringAndFret(coords.x, coords.y, getFretsForShape());
+                if (clickedString >= 0) handleClick(clickedString, clickedFret);
+            }
+        });
 
         function handleClick(clickedString, clickedFret) {
             if (currentMode === "reverse") {
@@ -888,7 +835,7 @@
                 .map((n, i) => `<span class="chord-note-tag ${tagClasses[i] || "fifth"}">${n}</span>`)
                 .join("");
 
-            drawChordDiagram(canvas, shape, displayShort, chordData.name, 0);
+            drawChordDiagram(canvas, shape, displayShort, chordData.name);
         }
 
         function renderReverseChord() {
@@ -906,10 +853,10 @@
 
             if (!hasNotes || noteSet.size === 0) {
                 chordNameDisplay.innerHTML = '<span style="color: var(--text-tertiary);">点击指板标记品位</span>';
-                chordNotesComposition.textContent = "点击品位 · 拖拽扫弦发声";
+                chordNotesComposition.textContent = "点击品位 · 水平拖拽扫弦";
                 chordIntervals.textContent = "至少标记一个音";
                 chordNoteTags.innerHTML = "";
-                drawChordDiagram(canvas, reverseFrets, "?", "标记品位", 0);
+                drawChordDiagram(canvas, reverseFrets, "?", "标记品位");
                 return;
             }
 
@@ -960,7 +907,7 @@
                 .map((n, i) => `<span class="chord-note-tag ${tagClasses[i] || "fifth"}">${n}</span>`)
                 .join("");
 
-            drawChordDiagram(canvas, reverseFrets, noteNames.join("·"), matches[0] ? matches[0].name : "", 0);
+            drawChordDiagram(canvas, reverseFrets, noteNames.join("·"), matches[0] ? matches[0].name : "");
         }
 
         /** 根据根音和音符集合生成音程关系文字 */
@@ -978,8 +925,8 @@
                 .join(" · ");
         }
 
-        // ========== 绘制12品指板图 ==========
-        function drawChordDiagram(canvas, shape, displayName, typeName, scrollOffset) {
+        // ========== 绘制12品指板图（竖向全12品，容器裁剪5品可见） ==========
+        function drawChordDiagram(canvas, shape, displayName, typeName) {
             const ctx = canvas.getContext("2d");
             const { leftMargin, topMargin, stringSpacing, fretHeight, scale } = currentLayout;
             const w = canvas.width;
@@ -989,28 +936,27 @@
 
             // 背景
             ctx.fillStyle = "rgba(255,255,255,0.02)";
-            roundRect(ctx, 4, 4, w - 8, h - 8, Math.round(12 * scale), true, false);
+            roundRect(ctx, 2, 2, w - 4, h - 4, Math.round(10 * scale), true, false);
 
             // 品位标记点（3, 5, 7, 9, 12品）
             const dotFrets = [3, 5, 7, 9, 12];
-            const dotRadius = Math.max(2.5, Math.round(3.5 * scale));
+            const dotRadius = Math.max(2, Math.round(3 * scale));
             dotFrets.forEach(fretNum => {
                 const y = topMargin + (fretNum - 0.5) * fretHeight;
                 if (fretNum === 12) {
-                    // 12品双点
                     const x1 = leftMargin + 1.5 * stringSpacing;
                     const x2 = leftMargin + 3.5 * stringSpacing;
                     [x1, x2].forEach(xx => {
                         ctx.beginPath();
                         ctx.arc(xx, y, dotRadius, 0, Math.PI * 2);
-                        ctx.fillStyle = "rgba(255,255,255,0.08)";
+                        ctx.fillStyle = "rgba(255,255,255,0.1)";
                         ctx.fill();
                     });
                 } else {
                     const x = leftMargin + 2.5 * stringSpacing;
                     ctx.beginPath();
                     ctx.arc(x, y, dotRadius, 0, Math.PI * 2);
-                    ctx.fillStyle = "rgba(255,255,255,0.08)";
+                    ctx.fillStyle = "rgba(255,255,255,0.1)";
                     ctx.fill();
                 }
             });
@@ -1019,11 +965,11 @@
             for (let f = 0; f <= NUM_FRETS; f++) {
                 const y = topMargin + f * fretHeight;
                 ctx.beginPath();
-                ctx.moveTo(leftMargin - 8, y);
-                ctx.lineTo(leftMargin + (NUM_STRINGS - 1) * stringSpacing + 8, y);
+                ctx.moveTo(leftMargin - 6, y);
+                ctx.lineTo(leftMargin + (NUM_STRINGS - 1) * stringSpacing + 6, y);
                 if (f === 0) {
                     ctx.strokeStyle = "rgba(255,255,255,0.45)";
-                    ctx.lineWidth = Math.max(1.5, 2.5 * scale);
+                    ctx.lineWidth = Math.max(1.5, 2.2 * scale);
                 } else {
                     ctx.strokeStyle = "rgba(255,255,255,0.1)";
                     ctx.lineWidth = Math.max(0.6, 1 * scale);
@@ -1031,20 +977,20 @@
                 ctx.stroke();
             }
 
-            // 品位数字（每品标记）
-            ctx.fillStyle = "rgba(255,255,255,0.15)";
-            const fretNumSize = Math.max(7, Math.round(9 * scale));
+            // 品位数字
+            ctx.fillStyle = "rgba(255,255,255,0.18)";
+            const fretNumSize = Math.max(8, Math.round(10 * scale));
             ctx.font = `500 ${fretNumSize}px -apple-system, sans-serif`;
             ctx.textAlign = "right";
             for (let f = 1; f <= NUM_FRETS; f++) {
-                const y = topMargin + (f - 0.5) * fretHeight + 3;
-                ctx.fillText(f, leftMargin - Math.round(12 * scale), y);
+                const y = topMargin + (f - 0.5) * fretHeight + Math.round(3 * scale);
+                ctx.fillText(f, leftMargin - Math.round(10 * scale), y);
             }
 
             // 弦线
             for (let s = 0; s < NUM_STRINGS; s++) {
                 const x = leftMargin + s * stringSpacing;
-                const lineWidth = Math.max(0.8, (1.3 - s * 0.14) * scale);
+                const lineWidth = Math.max(0.8, (1.2 - s * 0.12) * scale);
                 ctx.beginPath();
                 ctx.moveTo(x, topMargin);
                 ctx.lineTo(x, topMargin + NUM_FRETS * fretHeight);
@@ -1053,29 +999,21 @@
                 ctx.stroke();
             }
 
-            // 模式提示
-            const modeText = currentMode === "reverse" ? "点击品位 · 拖拽扫弦" : "点击品位试听 · 拖拽扫弦";
-            ctx.fillStyle = "rgba(255,255,255,0.12)";
-            const hintSize = Math.max(6, Math.round(8 * scale));
-            ctx.font = `500 ${hintSize}px -apple-system, sans-serif`;
-            ctx.textAlign = "center";
-            ctx.fillText(modeText, w / 2, h - 8);
-
             // 绘制按弦标记
-            const dotSize = Math.max(7, Math.round(10.5 * scale));
+            const dotSize = Math.max(8, Math.round(10 * scale));
             shape.forEach((fret, idx) => {
                 if (fret === "x" || fret === null || fret === undefined) return;
                 const x = leftMargin + idx * stringSpacing;
 
                 if (fret === 0) {
-                    // 空弦标记
-                    const ringRadius = Math.max(5, Math.round(8 * scale));
+                    // 空弦圆圈
+                    const ringRadius = Math.max(5, Math.round(7 * scale));
                     ctx.beginPath();
-                    ctx.arc(x, topMargin - Math.round(22 * scale), ringRadius, 0, Math.PI * 2);
+                    ctx.arc(x, topMargin - Math.round(18 * scale), ringRadius, 0, Math.PI * 2);
                     ctx.fillStyle = "transparent";
                     ctx.fill();
                     ctx.strokeStyle = "rgba(255,255,255,0.5)";
-                    ctx.lineWidth = Math.max(1.2, 2 * scale);
+                    ctx.lineWidth = Math.max(1.2, 1.8 * scale);
                     ctx.stroke();
                 } else {
                     const drawFret = fret;
@@ -1101,7 +1039,7 @@
 
                     // 品位数字
                     ctx.fillStyle = "#fff";
-                    const fretTextSize = Math.max(7, Math.round(10 * scale));
+                    const fretTextSize = Math.max(7, Math.round(9 * scale));
                     ctx.font = `600 ${fretTextSize}px -apple-system, sans-serif`;
                     ctx.textAlign = "center";
                     ctx.textBaseline = "middle";
@@ -1113,10 +1051,10 @@
             shape.forEach((fret, idx) => {
                 if (fret !== "x") return;
                 const x = leftMargin + idx * stringSpacing;
-                const cy2 = topMargin - Math.round(22 * scale);
-                const crossSize = Math.max(3, Math.round(5 * scale));
+                const cy2 = topMargin - Math.round(18 * scale);
+                const crossSize = Math.max(3, Math.round(4.5 * scale));
                 ctx.strokeStyle = "rgba(255,69,58,0.7)";
-                ctx.lineWidth = Math.max(1.2, 2 * scale);
+                ctx.lineWidth = Math.max(1.2, 1.8 * scale);
                 ctx.lineCap = "round";
                 ctx.beginPath();
                 ctx.moveTo(x - crossSize, cy2 - crossSize);
@@ -1128,23 +1066,23 @@
 
             // 弦号
             ctx.fillStyle = "rgba(255,255,255,0.25)";
-            const stringNumSize = Math.max(7, Math.round(10 * scale));
+            const stringNumSize = Math.max(8, Math.round(10 * scale));
             ctx.font = `500 ${stringNumSize}px -apple-system, sans-serif`;
             ctx.textAlign = "center";
             for (let s = 0; s < NUM_STRINGS; s++) {
                 const x = leftMargin + s * stringSpacing;
-                ctx.fillText(6 - s, x, topMargin - Math.round(30 * scale));
+                ctx.fillText(6 - s, x, topMargin - Math.round(24 * scale));
             }
 
             // 空弦音符名
             ctx.fillStyle = "rgba(255,255,255,0.2)";
-            const noteNameSize = Math.max(6, Math.round(9 * scale));
+            const noteNameSize = Math.max(7, Math.round(9 * scale));
             ctx.font = `500 ${noteNameSize}px -apple-system, sans-serif`;
             ctx.textAlign = "center";
             const openNotes = ["E", "A", "D", "G", "B", "E"];
             for (let s = 0; s < NUM_STRINGS; s++) {
                 const x = leftMargin + s * stringSpacing;
-                ctx.fillText(openNotes[s], x, topMargin - Math.round(38 * scale));
+                ctx.fillText(openNotes[s], x, topMargin - Math.round(32 * scale));
             }
         }
 
