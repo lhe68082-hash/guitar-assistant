@@ -520,7 +520,7 @@ body::before {
     display: block;
     filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.3));
     pointer-events: auto;
-    touch-action: pan-y; /* 允许竖向滚动穿透到容器 */
+    touch-action: manipulation; /* 允许轻点+手势，不拦截click */
     max-width: 100%;
 }
 
@@ -606,6 +606,7 @@ body::before {
     text-align: center;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
+    justify-content: center;
 }
 
 .tuner-header {
@@ -750,17 +751,18 @@ body::before {
     top: 8px;
 }
 
-/* 琴弦行 - 左右列共用 */
+/* 琴弦行 - 整行可点击试听 */
 .headstock-string {
     display: flex;
     align-items: center;
     gap: 6px;
-    padding: 7px 8px;
+    padding: 8px 10px;
     position: relative;
     transition: all var(--duration-normal) var(--ease-out);
     border-radius: var(--radius-sm);
     border: 1px solid transparent;
     background: var(--fill-tertiary);
+    cursor: pointer;
 }
 
 /* 左列弦靠右（靠近中间） */
@@ -942,32 +944,42 @@ body::before {
     color: var(--green);
 }
 
-/* 播放按钮 */
+/* 播放按钮 - 试听参考音 */
 .string-play-btn {
-    width: 26px;
-    height: 26px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 10px;
     border: none;
     background: var(--fill-primary);
     color: var(--blue-light);
-    border-radius: 50%;
+    border-radius: var(--radius-full);
     cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     transition: all var(--duration-fast) var(--ease-out);
     flex-shrink: 0;
+    font-family: inherit;
+}
+
+.string-play-btn .play-label {
+    font-size: 0.58rem;
+    font-weight: 600;
+    color: var(--blue-light);
 }
 
 .string-play-btn svg {
-    width: 12px;
-    height: 12px;
+    width: 14px;
+    height: 14px;
 }
 
 .string-play-btn:hover {
     background: var(--blue);
     color: #fff;
-    transform: scale(1.1);
+    transform: scale(1.05);
     box-shadow: 0 2px 12px var(--blue-glow);
+}
+
+.string-play-btn:hover .play-label {
+    color: #fff;
 }
 
 .string-play-btn:active {
@@ -978,6 +990,10 @@ body::before {
     background: var(--blue);
     color: #fff;
     animation: ripple 0.8s ease-out infinite;
+}
+
+.string-play-btn.playing .play-label {
+    color: #fff;
 }
 
 @keyframes ripple {
@@ -1056,6 +1072,7 @@ body::before {
     text-align: center;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
+    justify-content: center;
 }
 
 .metronome-display {
