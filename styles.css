@@ -520,7 +520,7 @@ body::before {
     display: block;
     filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.3));
     pointer-events: auto;
-    touch-action: none; /* 禁止浏览器接管触摸，全部交给 JS */
+    touch-action: pan-y; /* 允许纵向滚动穿透到滚动容器，横向手势由 JS 处理 */
     max-width: 100%;
 }
 

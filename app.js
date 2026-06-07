@@ -27,7 +27,7 @@ const SCALES = {
   blues:{name:'布鲁斯',notes:[0,3,5,6,7,10]},
 };
 
-const NUM_FRETS=13, NUM_STRINGS=6;
+const NUM_FRETS=13, NUM_STRINGS=6, SCALE_FRETS=6;
 const INTERVAL_NAMES = ['根音','小二度','大二度','小三度','大三度','纯四度','增四/减五','纯五度','小六度','大六度','小七度','大七度'];
 const TAG_CLASSES = ['root','third','fifth','seventh','ninth','eleventh'];
 
@@ -266,7 +266,12 @@ function initChordFinder(){
   // ---- 模式切换（统一管理 UI 元素显示/隐藏）----
   function setMode(mode){
     currentMode=mode;
+    // 非音阶模式恢复13品标准布局
+    if(mode!=='scale')initCanvas();
     modeTabs.querySelectorAll('.chord-mode-tab').forEach(t=>t.classList.toggle('active',t.dataset.mode===mode));
+    // 更新底部提示
+    if(mode==='scale')strumHint.textContent='前6品音阶指型 · 轻点音阶音试听 · 上下滑动浏览';
+    else strumHint.textContent='↕ 滑动指板浏览更多品位 · 水平拖拽扫弦';
     if(mode==='query'){
       chordSelector.style.display='';reverseHint.style.display='none';
       voicingNav.style.display='';favBtn.style.display='';favList.style.display='';
@@ -410,18 +415,19 @@ function initChordFinder(){
     });
   }
 
-  // ---- 指板触摸/点击事件（统一用 pointer，pointerup 同时处理单点和扫弦）----
-  let ptrStartTime=0,ptrStartX=0,ptrStartY=0,ptrMoved=false;
+  // ---- 指板触摸/点击事件（touch-action:pan-y 让纵向滚动穿透，JS只处理横向扫弦+轻点）----
+  let ptrStartTime=0,ptrStartX=0,ptrStartY=0,ptrMoved=false,ptrHorizontal=false;
   canvas.addEventListener('pointerdown',e=>{
-    const c=canvasCoords(e);ptrStartX=c.x;ptrStartY=c.y;ptrStartTime=Date.now();ptrMoved=false;
+    const c=canvasCoords(e);ptrStartX=c.x;ptrStartY=c.y;ptrStartTime=Date.now();ptrMoved=false;ptrHorizontal=false;
     isStrumming=true;strumTouched.clear();strumLast=0;strumHint.classList.add('active');
-    e.preventDefault(); // 阻止浏览器默认手势
+    // 不调 preventDefault —— 让浏览器能正常识别纵向滚动
   });
   canvas.addEventListener('pointermove',e=>{
-    if(!isStrumming)return;e.preventDefault();
+    if(!isStrumming)return;
     const c=canvasCoords(e),dx=Math.abs(c.x-ptrStartX),dy=Math.abs(c.y-ptrStartY);
-    if(dx+dy>5)ptrMoved=true;
-    if(dx>12&&dx>dy*1.5){
+    if(dx+dy>6)ptrMoved=true;
+    // 仅当明显为横向拖拽时才收集弦号（纵向留给浏览器滚动）
+    if(dx>14&&dx>dy*1.8){ptrHorizontal=true;
       const{clickedString}=getStringAndFret(c.x,c.y);
       if(clickedString>=0&&!strumTouched.has(clickedString)){
         const n=Date.now();if(n-strumLast>40||strumTouched.size===0){strumTouched.add(clickedString);strumLast=n;}
@@ -431,11 +437,13 @@ function initChordFinder(){
   canvas.addEventListener('pointerup',e=>{
     if(!isStrumming)return;isStrumming=false;strumHint.classList.remove('active');
     let c;try{c=canvasCoords(e);}catch(_){return;}
-    if(strumTouched.size>=2&&ptrMoved){
-      // 扫弦
+    const dur=Date.now()-ptrStartTime,totalDx=Math.abs(c.x-ptrStartX),totalDy=Math.abs(c.y-ptrStartY);
+    const isTap=!ptrMoved||(totalDx+totalDy)<10;
+    if(strumTouched.size>=2&&ptrHorizontal){
+      // 横向扫弦
       playStrum(Array.from(strumTouched),c.y-ptrStartY>0?'down':'up');
-    }else if(strumTouched.size<=1&&Date.now()-ptrStartTime<300){
-      // 单点：用 pointerup 坐标（比 click 更准确）
+    }else if(isTap&&dur<400){
+      // 判定为轻点（非滚动手势）
       const{clickedString:cs,clickedFret:cf}=getStringAndFret(c.x,c.y);
       if(cs>=0){
         if(currentMode==='reverse'){
@@ -453,8 +461,30 @@ function initChordFinder(){
       }
     }
   });
-  canvas.addEventListener('pointercancel',()=>{isStrumming=false;strumHint.classList.remove('active');});
-  // 阻止 canvas 上的 contextmenu
+  canvas.addEventListener('pointercancel',()=>{
+    // 浏览器接管了手势（比如开始纵向滚动了），正常退出
+    isStrumming=false;strumHint.classList.remove('active');
+    // 如果是轻微移动后 cancel，当成一次轻点处理
+    const dur=Date.now()-ptrStartTime;
+    if(!ptrHorizontal&&strumTouched.size<=1&&dur<350&&ptrMoved&&ptrStartY>0){
+      const cx=ptrStartX,cy=ptrStartY;
+      const{clickedString:cs,clickedFret:cf}=getStringAndFret(cx,cy);
+      if(cs>=0){
+        if(currentMode==='reverse'){
+          if(typeof cf==='number'&&cf>=0){
+            const cur=reverseFrets[cs];
+            if(cur===null||cur===undefined)reverseFrets[cs]=cf;
+            else if(cur===cf)reverseFrets[cs]=0;
+            else if(cur===0)reverseFrets[cs]='x';
+            else if(cur==='x')reverseFrets[cs]=null;
+            else reverseFrets[cs]=cf;
+            if(typeof reverseFrets[cs]==='number'&&reverseFrets[cs]>=0)AudioEngine.playFretSound(cs,reverseFrets[cs]);
+            renderReverseChord();
+          }
+        }else if(typeof cf==='number'&&cf>=0)AudioEngine.playFretSound(cs,cf);
+      }
+    }
+  });
   canvas.addEventListener('contextmenu',e=>e.preventDefault());
 
   function resetReverse(){reverseFrets=Array(6).fill(null);
@@ -465,7 +495,10 @@ function initChordFinder(){
 
   // ---- 渲染 ----
   function doRender(){
-    if(currentMode==='query')renderChord();else if(currentMode==='scale')renderScale();
+    // 非音阶模式恢复13品标准布局
+    if(currentMode!=='scale')initCanvas();
+    if(currentMode==='query')renderChord();
+    else if(currentMode==='scale')renderScale();
   }
 
   function renderChord(){
@@ -499,8 +532,14 @@ function initChordFinder(){
     const scaleNoteSet=new Set(scaleNotes);
     const displayName=selRoot+' '+scale.name;
     chordNameEl.innerHTML=`<span style="color:var(--teal)">${displayName}</span>`;
-    notesEl.textContent=scaleNotes.join(' · ');intervalsEl.textContent='点击指板试听音阶音';
+    notesEl.textContent=scaleNotes.join(' · ');intervalsEl.textContent='前6品指型 · 轻点试听 · 上下滑动浏览';
     tagsEl.innerHTML='';
+    // 音阶模式：重算布局，只显示前6品，每格更大
+    const cw=scrollContainer?scrollContainer.clientWidth-4:340;const sc=Math.min(1,cw/340);
+    const lm=Math.round(38*sc),tm=Math.round(48*sc),ss=Math.round(44*sc),fh=Math.round(54*sc),pd=Math.round(8*sc);
+    currentLayout={scale:sc,leftMargin:lm,topMargin:tm,stringSpacing:ss,fretHeight:fh,padding:pd,w:cw,h:tm+SCALE_FRETS*fh+28};
+    canvas.width=currentLayout.w;canvas.height=currentLayout.h;
+    canvas.style.width=currentLayout.w+'px';canvas.style.height=currentLayout.h+'px';
     drawScaleOnFretboard(scaleNotes,scaleNoteSet,rootST,selRoot);
   }
 
@@ -568,38 +607,51 @@ function initChordFinder(){
 
   function drawScaleOnFretboard(scaleNotes,noteSet,rootST,rootName){
     const ctx=canvas.getContext('2d');const{leftMargin:lm,topMargin:tm,stringSpacing:ss,fretHeight:fh,scale,w,h}=currentLayout;
+    const nf=SCALE_FRETS; // 只画前6品（0-5品）
     ctx.clearRect(0,0,w,h);
     ctx.fillStyle='rgba(255,255,255,0.02)';roundRect(ctx,2,2,w-4,h-4,Math.round(10*scale),true);
-    [3,5,7,9,12].forEach(fn=>{const y=tm+(fn-0.5)*fh,dr=Math.max(2,Math.round(3*scale));
-      if(fn===12){[lm+1.5*ss,lm+3.5*ss].forEach(xx=>{ctx.beginPath();ctx.arc(xx,y,dr,0,Math.PI*2);ctx.fillStyle='rgba(255,255,255,0.1)';ctx.fill();});}
-      else{ctx.beginPath();ctx.arc(lm+2.5*ss,y,dr,0,Math.PI*2);ctx.fillStyle='rgba(255,255,255,0.1)';ctx.fill();}});
-    for(let f=0;f<=NUM_FRETS;f++){const y=tm+f*fh;ctx.beginPath();ctx.moveTo(lm-6,y);ctx.lineTo(lm+(NUM_STRINGS-1)*ss+6,y);
-      ctx.strokeStyle=f===0?'rgba(255,255,255,0.45)':'rgba(255,255,255,0.08)';ctx.lineWidth=f===0?Math.max(1.5,2.2*scale):Math.max(0.6,0.8*scale);ctx.stroke();}
-    ctx.fillStyle='rgba(255,255,255,0.18)';const ffs=Math.max(8,Math.round(10*scale));ctx.font=`500 ${ffs}px -apple-system,sans-serif`;ctx.textAlign='right';
-    for(let f=1;f<=NUM_FRETS;f++)ctx.fillText(f,lm-Math.round(10*scale),tm+(f-0.5)*fh+Math.round(3*scale));
-    for(let s=0;s<NUM_STRINGS;s++){const x=lm+s*ss;ctx.beginPath();ctx.moveTo(x,tm);ctx.lineTo(x,tm+NUM_FRETS*fh);ctx.strokeStyle='rgba(255,255,255,0.2)';ctx.lineWidth=Math.max(0.8,(1.2-s*0.12)*scale);ctx.stroke();}
-    // 绘制音阶标记
-    const ds=Math.max(6,Math.round(8*scale));
+    // 品位标记点（只标记3品和5品）
+    [3,5].forEach(fn=>{const y=tm+(fn-0.5)*fh,dr=Math.max(3,Math.round(4*scale));
+      ctx.beginPath();ctx.arc(lm+2.5*ss,y,dr,0,Math.PI*2);ctx.fillStyle='rgba(255,255,255,0.1)';ctx.fill();});
+    // 品丝
+    for(let f=0;f<=nf;f++){const y=tm+f*fh;ctx.beginPath();ctx.moveTo(lm-6,y);ctx.lineTo(lm+(NUM_STRINGS-1)*ss+6,y);
+      ctx.strokeStyle=f===0?'rgba(255,255,255,0.45)':'rgba(255,255,255,0.1)';ctx.lineWidth=f===0?Math.max(1.5,2.2*scale):Math.max(0.6,1*scale);ctx.stroke();}
+    // 品位数字（大号）
+    ctx.fillStyle='rgba(255,255,255,0.22)';const ffs=Math.max(10,Math.round(12*scale));ctx.font=`600 ${ffs}px -apple-system,sans-serif`;ctx.textAlign='right';
+    for(let f=1;f<=nf;f++)ctx.fillText(f,lm-Math.round(10*scale),tm+(f-0.5)*fh+Math.round(4*scale));
+    // 弦线
+    for(let s=0;s<NUM_STRINGS;s++){const x=lm+s*ss;ctx.beginPath();ctx.moveTo(x,tm);ctx.lineTo(x,tm+nf*fh);ctx.strokeStyle='rgba(255,255,255,0.25)';ctx.lineWidth=Math.max(0.8,(1.2-s*0.12)*scale);ctx.stroke();}
+    // 绘制音阶标记（带音名）
+    const ds=Math.max(9,Math.round(12*scale)),lblSize=Math.max(8,Math.round(10*scale));
     for(let s=0;s<NUM_STRINGS;s++){const os=STR_OPEN_MIDI[s]%12;
-      for(let f=0;f<=NUM_FRETS;f++){const ns=(os+f)%12;if(!noteSet.has(NOTE_NAMES[ns]))continue;const x=lm+s*ss,y=f===0?tm-Math.round(18*scale):tm+(f-0.5)*fh;const isRoot=(ns===rootST);
+      for(let f=0;f<=nf;f++){const ns=(os+f)%12;const noteName=NOTE_NAMES[ns];if(!noteSet.has(noteName))continue;const x=lm+s*ss,y=f===0?tm-Math.round(20*scale):tm+(f-0.5)*fh;const isRoot=(ns===rootST);
+        // 圆圈
         ctx.beginPath();ctx.arc(x,y,isRoot?ds+2:ds,0,Math.PI*2);
         const g=ctx.createRadialGradient(x-1,y-1,ds*0.1,x,y,ds);
         if(isRoot){g.addColorStop(0,'#ff6b6b');g.addColorStop(0.7,'#ff375f');g.addColorStop(1,'#d02a4a');}
         else{g.addColorStop(0,'#64d2ff');g.addColorStop(0.7,'#0a84ff');g.addColorStop(1,'#0060d0');}
         ctx.fillStyle=g;ctx.fill();
-        if(f===0){ctx.strokeStyle='rgba(255,255,255,0.4)';ctx.lineWidth=1.5*scale;ctx.stroke();}
+        if(f===0){ctx.strokeStyle='rgba(255,255,255,0.45)';ctx.lineWidth=1.8*scale;ctx.stroke();}
+        // 音名文字（在圆圈中间）
+        ctx.fillStyle='#fff';ctx.font=`700 ${lblSize}px -apple-system,sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.fillText(noteName,x,y+0.5);
     }}
     // 弦号和空弦名
-    ctx.fillStyle='rgba(255,255,255,0.25)';ctx.font=`500 ${Math.max(8,Math.round(10*scale))}px -apple-system,sans-serif`;ctx.textAlign='center';
-    for(let s=0;s<NUM_STRINGS;s++)ctx.fillText(6-s,lm+s*ss,tm-Math.round(24*scale));
-    ctx.fillStyle='rgba(255,255,255,0.2)';ctx.font=`500 ${Math.max(7,Math.round(9*scale))}px -apple-system,sans-serif`;
-    for(let s=0;s<NUM_STRINGS;s++)ctx.fillText(OPEN_NOTES[s],lm+s*ss,tm-Math.round(34*scale));
+    ctx.fillStyle='rgba(255,255,255,0.28)';ctx.font=`600 ${Math.max(10,Math.round(12*scale))}px -apple-system,sans-serif`;ctx.textAlign='center';
+    for(let s=0;s<NUM_STRINGS;s++)ctx.fillText(6-s+'弦',lm+s*ss,tm-Math.round(28*scale));
+    ctx.fillStyle='rgba(255,255,255,0.22)';ctx.font=`500 ${Math.max(8,Math.round(10*scale))}px -apple-system,sans-serif`;
+    for(let s=0;s<NUM_STRINGS;s++)ctx.fillText(OPEN_NOTES[s],lm+s*ss,tm-Math.round(38*scale));
     // 图例
-    ctx.fillStyle='#ff375f';ctx.beginPath();ctx.arc(w-50,h-10,4,0,Math.PI*2);ctx.fill();
-    ctx.fillStyle='rgba(255,255,255,0.4)';ctx.font='500 8px -apple-system,sans-serif';ctx.textAlign='left';ctx.fillText('根音',w-43,h-7);
-    ctx.fillStyle='#0a84ff';ctx.beginPath();ctx.arc(w-100,h-10,4,0,Math.PI*2);ctx.fill();
-    ctx.fillStyle='rgba(255,255,255,0.4)';ctx.fillText('音阶音',w-93,h-7);
+    const lx=w-90,ly=h-12;
+    ctx.fillStyle='#ff375f';ctx.beginPath();ctx.arc(lx,ly,5,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,0.45)';ctx.font='500 9px -apple-system,sans-serif';ctx.textAlign='left';ctx.fillText('根音',lx+8,ly+3);
+    ctx.fillStyle='#0a84ff';ctx.beginPath();ctx.arc(lx+38,ly,5,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,0.45)';ctx.fillText('音阶音',lx+46,ly+3);
+    // 指型名称
+    ctx.fillStyle='rgba(100,210,255,0.6)';ctx.font=`600 ${Math.max(9,Math.round(11*scale))}px -apple-system,sans-serif`;
+    ctx.textAlign='right';ctx.fillText(rootName+' '+getScaleName(),w-Math.round(8*scale),Math.round(16*scale));
   }
+  function getScaleName(){return SCALES[selScale]?SCALES[selScale].name:'';}
 
   function roundRect(ctx,x,y,w,h,r,fill){ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();if(fill)ctx.fill();}
 
