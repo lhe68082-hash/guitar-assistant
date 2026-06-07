@@ -1,19 +1,23 @@
 // ============ 吉他学习助手 v4 - 多指型 + 收藏 + 进行 + 音阶 + PWA ============
 // ==================== 密码验证 ====================
 (function checkPassword() {
-    const PASS_KEY = 'guitar_helper_auth';
+    var PASS_KEY = 'guitar_helper_auth';
     if (localStorage.getItem(PASS_KEY) === 'ok') return;
 
-    const overlay = document.getElementById('passwordOverlay');
-    const input = document.getElementById('passwordInput');
-    const btn = document.getElementById('passwordSubmit');
-    const err = document.getElementById('passwordError');
+    var overlay = document.getElementById('passwordOverlay');
+    var input = document.getElementById('passwordInput');
+    var btn = document.getElementById('passwordSubmit');
+    var err = document.getElementById('passwordError');
 
-    // 在这里修改你的密码（默认: guitar2024）
-    const CORRECT = '0000';
+    // 在这里修改你的密码
+    var CORRECT = '0000';
+
+    if (!overlay || !input || !btn || !err) return;
+
+    overlay.classList.remove('hidden');
 
     function tryUnlock() {
-        const val = input.value.trim();
+        var val = input.value.trim();
         if (val === CORRECT) {
             err.classList.remove('show');
             localStorage.setItem(PASS_KEY, 'ok');
@@ -31,8 +35,6 @@
         if (e.key === 'Enter') tryUnlock();
     });
 
-    // 显示密码层
-    overlay.classList.remove('hidden');
     input.focus();
 })();
 
