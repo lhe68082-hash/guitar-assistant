@@ -1860,8 +1860,11 @@ body::before {
     }
 
     .string-play-btn {
-        width: 26px;
-        height: 26px;
+        padding: 4px 8px;
+    }
+
+    .string-play-btn .play-label {
+        font-size: 0.52rem;
     }
 
     .tuning-peg {
@@ -2019,6 +2022,85 @@ body::before {
 @media (min-width: 601px) {
     .app-container {
         padding: 0 24px 0;
+    }
+
+    /* 调音器桌面端优化 */
+    .headstock-container {
+        padding: 24px 16px;
+    }
+
+    .headstock-body {
+        gap: 12px;
+    }
+
+    .headstock-column {
+        max-width: 260px;
+        gap: 8px;
+    }
+
+    .headstock-string {
+        padding: 12px 14px;
+        gap: 10px;
+    }
+
+    .tuning-peg {
+        width: 36px;
+        height: 36px;
+    }
+
+    .tuning-peg::after {
+        width: 16px;
+        height: 4px;
+    }
+
+    .string-number {
+        font-size: 1rem;
+        min-width: 26px;
+    }
+
+    .string-note-display {
+        font-size: 1.2rem;
+        min-width: 36px;
+    }
+
+    .string-freq {
+        font-size: 0.7rem;
+        min-width: 52px;
+    }
+
+    .string-play-btn {
+        padding: 7px 14px;
+        gap: 5px;
+    }
+
+    .string-play-btn svg {
+        width: 16px;
+        height: 16px;
+    }
+
+    .string-play-btn .play-label {
+        font-size: 0.7rem;
+    }
+
+    .tuner-meter-horizontal {
+        min-width: 60px;
+        gap: 3px;
+    }
+
+    .tuner-bar-track {
+        height: 5px;
+    }
+
+    .tuner-labels {
+        font-size: 0.6rem;
+    }
+
+    .headstock-neck {
+        width: 20px;
+    }
+
+    .neck-line {
+        width: 5px;
     }
 }
 
