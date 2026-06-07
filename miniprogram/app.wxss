@@ -1,0 +1,24 @@
+page {
+  --bg-primary: #000000;
+  --bg-secondary: #1c1c1e;
+  --bg-tertiary: #2c2c2e;
+  --text-primary: #ffffff;
+  --text-secondary: #aeaeb2;
+  --text-tertiary: #636366;
+  --blue: #0a84ff;
+  --blue-glow: rgba(10, 132, 255, 0.4);
+  --teal: #64d2ff;
+  --purple: #bf5af2;
+  --red: #ff375f;
+  --green: #30d158;
+  --orange: #ff9f0a;
+  --separator: rgba(255, 255, 255, 0.08);
+  --fill-primary: rgba(10, 132, 255, 0.12);
+  --fill-secondary: rgba(255, 255, 255, 0.04);
+  --fill-tertiary: rgba(255, 255, 255, 0.06);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: -apple-system, "PingFang SC", "Helvetica Neue", sans-serif;
+  font-size: 28rpx;
+  line-height: 1.5;
+}

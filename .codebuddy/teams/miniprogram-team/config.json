@@ -1,0 +1,18 @@
+{
+  "name": "miniprogram-team",
+  "leadAgentId": "bf4e7c75ddb84b239778752d85d68ee7",
+  "workspacePath": "/Users/he/CodeBuddy/20260606162802",
+  "createdAt": "2026-06-06T10:54:19.553Z",
+  "options": {
+    "workspacePath": "/Users/he/CodeBuddy/20260606162802",
+    "isAutoTeam": false
+  },
+  "members": [
+    {
+      "memberId": "team-lead@miniprogram-team",
+      "name": "team-lead",
+      "role": "Team Lead - coordinates the team and interacts with the user"
+    }
+  ],
+  "isAutoTeam": false
+}

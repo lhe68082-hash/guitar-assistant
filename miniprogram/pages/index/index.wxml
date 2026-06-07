@@ -1,0 +1,241 @@
+<!-- 吉他学习助手 微信小程序 -->
+<view class="app-container">
+  <!-- 顶部导航 -->
+  <view class="header">
+    <view class="logo">
+      <view class="logo-icon">
+        <text class="logo-emoji">🎸</text>
+      </view>
+      <text class="logo-title">吉他学习助手</text>
+    </view>
+    <view class="nav-tabs">
+      <view class="nav-tab {{activeTab==='chord'?'active':''}}" data-tab="chord" bindtap="switchTab">
+        <text>和弦</text>
+      </view>
+      <view class="nav-tab {{activeTab==='tuner'?'active':''}}" data-tab="tuner" bindtap="switchTab">
+        <text>调音</text>
+      </view>
+      <view class="nav-tab {{activeTab==='metronome'?'active':''}}" data-tab="metronome" bindtap="switchTab">
+        <text>节拍</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- ===== 和弦查询 ===== -->
+  <view class="tab-content" wx:if="{{activeTab==='chord'}}">
+    <!-- 模式切换 -->
+    <view class="chord-mode-tabs">
+      <view class="chord-mode-tab {{chordMode==='query'?'active':''}}" data-mode="query" bindtap="setChordMode">查询和弦</view>
+      <view class="chord-mode-tab {{chordMode==='reverse'?'active':''}}" data-mode="reverse" bindtap="setChordMode">指板推理</view>
+      <view class="chord-mode-tab {{chordMode==='scale'?'active':''}}" data-mode="scale" bindtap="setChordMode">音阶指型</view>
+    </view>
+
+    <!-- 和弦选择器 -->
+    <view class="chord-selector" wx:if="{{showChordSelector}}">
+      <view class="select-group">
+        <text class="select-label">根音</text>
+        <view class="note-buttons">
+          <view wx:for="{{rootNotes}}" wx:key="*this" class="note-btn {{selRoot===item?'active':''}}" data-note="{{item}}" bindtap="selectRoot">{{item}}</view>
+        </view>
+      </view>
+      <view class="select-group">
+        <text class="select-label">和弦类型</text>
+        <view class="chord-type-buttons">
+          <view wx:for="{{chordTypes}}" wx:key="key" class="type-btn {{selType===item.key?'active':''}}" data-type="{{item.key}}" bindtap="selectType">{{item.label}}</view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 音阶类型选择 -->
+    <view class="scale-type-row" wx:if="{{showScaleType}}">
+      <view wx:for="{{scaleTypes}}" wx:key="key" class="scale-type-btn {{selScale===item.key?'active':''}}" data-scale="{{item.key}}" bindtap="selectScale">{{item.label}}</view>
+    </view>
+
+    <!-- 和弦名称 -->
+    <view class="chord-name-display">
+      <text>{{chordName}}</text>
+      <text class="chord-type-badge" wx:if="{{chordTypeBadge}}"> {{chordTypeBadge}}</text>
+    </view>
+    <view class="reverse-chord-hint" wx:if="{{showReverseHint}}">点击指板上的品位来标记按弦位置</view>
+
+    <!-- 指板 Canvas -->
+    <view class="chord-diagram-scroll-container">
+      <scroll-view scroll-x class="fretboard-scroll" wx:if="{{chordMode!=='scale'}}">
+        <view class="chord-diagram-container">
+          <canvas type="2d" id="chordCanvas" class="chord-canvas" bindtouchstart="handleFretTap" bindready="chordCanvasReady"></canvas>
+        </view>
+      </scroll-view>
+      <view class="chord-diagram-container" wx:if="{{chordMode==='scale'}}">
+        <canvas type="2d" id="chordCanvas" class="chord-canvas" bindtouchstart="handleFretTap" bindready="chordCanvasReady"></canvas>
+      </view>
+    </view>
+    <view class="strum-hint">{{strumHint}}</view>
+
+    <!-- 指型导航 -->
+    <view class="voicing-nav" wx:if="{{showVoicingNav}}">
+      <view class="voicing-arrow {{voicingIdx===0?'disabled':''}}" bindtap="prevVoicing">◀</view>
+      <text class="voicing-label">{{voicingLabel}}</text>
+      <view class="voicing-arrow {{voicingIdx>=voicingTotal-1?'disabled':''}}" bindtap="nextVoicing">▶</view>
+      <view class="fav-btn" bindtap="toggleFav">
+        <text class="{{isFav?'fav-active':'fav-inactive'}}">♡</text>
+      </view>
+    </view>
+
+    <!-- 音符标签 -->
+    <view class="chord-note-tags">
+      <view wx:for="{{chordNoteTags}}" wx:key="note" class="chord-note-tag {{item.cls}}">{{item.note}}</view>
+    </view>
+
+    <!-- 和弦信息 -->
+    <view class="chord-info">
+      <view class="chord-info-card">
+        <text class="info-label">组成音</text>
+        <text class="info-value">{{chordNotes}}</text>
+      </view>
+      <view class="chord-info-card">
+        <text class="info-label">音程关系</text>
+        <text class="info-value">{{chordIntervals}}</text>
+      </view>
+    </view>
+
+    <!-- 收藏 -->
+    <view class="fav-list">
+      <text class="fav-empty" wx:if="{{favs.length===0}}">暂无收藏，点击 ♡ 添加</text>
+      <block wx:for="{{favs}}" wx:key="name">
+        <view class="fav-chip" data-root="{{item.root}}" data-type="{{item.type}}" bindtap="selectFav">
+          <text>{{item.name}}</text>
+          <text class="fav-remove" data-idx="{{index}}" catchtap="removeFav">×</text>
+        </view>
+      </block>
+    </view>
+
+    <!-- 和弦进行 -->
+    <view class="prog-toggle" bindtap="toggleProgPanel">▶ 和弦进行</view>
+    <view class="prog-panel" wx:if="{{showProgPanel}}">
+      <view class="prog-list">
+        <text class="prog-empty" wx:if="{{progressions.length===0}}">点击下方 +加入进行 来构建和弦进行</text>
+        <view wx:for="{{progressions}}" wx:key="name" class="prog-chip {{progPlaying&&progIdx===index?'active':''}}">
+          <text>{{item.name}}</text>
+          <text class="prog-remove" data-idx="{{index}}" catchtap="removeProg">×</text>
+        </view>
+      </view>
+      <view class="prog-controls">
+        <view class="prog-add-btn" bindtap="addToProg">+ 加入进行</view>
+        <view class="prog-play-btn {{progPlaying?'running':''}}" bindtap="toggleProgPlay">{{progPlaying?'⏸':'▶'}}</view>
+        <view class="prog-bpm">
+          <slider min="40" max="200" value="{{progBpmVal}}" bindchange="progBpmChange" block-size="14" activeColor="#0a84ff" backgroundColor="rgba(255,255,255,0.1)"/>
+          <text class="prog-bpm-val">{{progBpmVal}} BPM</text>
+        </view>
+        <view class="prog-clear-btn" bindtap="clearProg">清空</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- ===== 调音器 ===== -->
+  <view class="tab-content tuner-panel" wx:if="{{activeTab==='tuner'}}">
+    <view class="tuner-header">
+      <text class="tuner-title">调音器</text>
+      <text class="tuner-desc">{{tunerDesc}}</text>
+    </view>
+
+    <!-- 乐器选择 -->
+    <view class="instrument-selector">
+      <view wx:for="{{instruments}}" wx:key="key" class="instrument-btn {{currentInst===item.key?'active':''}}" data-instrument="{{item.key}}" bindtap="selectInstrument">{{item.label}}</view>
+    </view>
+
+    <!-- 琴头样式 -->
+    <view class="headstock-container">
+      <!-- 左列弦 -->
+      <view class="headstock-body">
+        <view class="headstock-column headstock-left">
+          <view wx:for="{{leftRows}}" wx:key="num" class="headstock-string">
+            <view class="string-info">
+              <text class="string-number">{{item.label}}</text>
+              <text class="string-note-display">{{item.note}}</text>
+            </view>
+            <view class="tuner-meter-horizontal">
+              <view class="tuner-bar-track"><view class="tuner-fill" style="width:50%"></view></view>
+              <view class="tuner-labels">
+                <text>♭</text><text class="center-label">·</text><text>♯</text>
+              </view>
+            </view>
+            <view class="string-play-btn" data-freq="{{item.freq}}" catchtap="playRefTone">试听</view>
+          </view>
+        </view>
+        <!-- 琴颈分隔 -->
+        <view class="headstock-neck">
+          <view class="neck-line"></view>
+          <view class="neck-nut"></view>
+        </view>
+        <!-- 右列弦 -->
+        <view class="headstock-column headstock-right">
+          <view wx:for="{{rightRows}}" wx:key="num" class="headstock-string">
+            <view class="string-play-btn" data-freq="{{item.freq}}" catchtap="playRefTone">试听</view>
+            <view class="tuner-meter-horizontal">
+              <view class="tuner-bar-track"><view class="tuner-fill" style="width:50%"></view></view>
+              <view class="tuner-labels">
+                <text>♭</text><text class="center-label">·</text><text>♯</text>
+              </view>
+            </view>
+            <view class="string-info string-info-right">
+              <text class="string-note-display">{{item.note}}</text>
+              <text class="string-number">{{item.label}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+      <view class="headstock-hint">点击任意弦行或<text class="hint-bold">试听</text>按钮 · 聆听标准参考音</view>
+    </view>
+
+    <!-- 麦克风调音 -->
+    <view class="tuner-mic-section">
+      <view class="mic-btn {{isListening?'listening':''}}" bindtap="toggleMic">
+        <text>{{isListening?'停止调音':'开始调音'}}</text>
+      </view>
+      <text class="detected-freq">{{detectedFreq}}</text>
+      <text class="detected-note">{{detectedNote}}</text>
+    </view>
+  </view>
+
+  <!-- ===== 节拍器 ===== -->
+  <view class="tab-content metronome-panel" wx:if="{{activeTab==='metronome'}}">
+    <view class="metronome-display">
+      <view class="bpm-display">
+        <text class="bpm-value">{{bpm}}</text>
+        <text class="bpm-label">BPM</text>
+      </view>
+      <view class="time-signature-selector">
+        <view wx:for="{{tsBtns}}" wx:key="label" class="ts-btn {{item.active?'active':''}}" data-beats="{{item.beats}}" data-div="{{item.div}}" bindtap="selectTimeSig">{{item.label}}</view>
+      </view>
+    </view>
+
+    <view class="bpm-control">
+      <view class="bpm-btn" bindtap="bpmD10">−10</view>
+      <view class="bpm-btn" bindtap="bpmD1">−1</view>
+      <slider class="bpm-slider" min="30" max="250" value="{{bpm}}" bindchange="bpmSliderChange" block-size="20" activeColor="#64d2ff" backgroundColor="rgba(255,255,255,0.1)"/>
+      <view class="bpm-btn" bindtap="bpmI1">+1</view>
+      <view class="bpm-btn" bindtap="bpmI10">+10</view>
+    </view>
+
+    <view class="tap-tempo">
+      <view class="tap-btn" bindtap="tapTempo">◎ 打拍定速</view>
+    </view>
+
+    <view class="beat-visual">
+      <view wx:for="{{beatDots}}" wx:key="*this" class="beat-dot {{index===0?'active accent':''}}"></view>
+    </view>
+
+    <view class="metronome-controls">
+      <view class="metronome-start-btn {{metroRunning?'running':''}}" bindtap="toggleMetro">
+        <text>{{metroRunning?'停止':'开始'}}</text>
+      </view>
+    </view>
+
+    <view class="sound-select">
+      <text class="select-label">音色</text>
+      <picker bindchange="soundPickChange" value="{{selSoundIdx}}" range="{{soundTypes}}" range-key="label">
+        <view class="picker-display">{{selSoundLabel}}</view>
+      </picker>
+    </view>
+  </view>
+</view>

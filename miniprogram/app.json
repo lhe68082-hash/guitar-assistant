@@ -1,0 +1,19 @@
+{
+  "pages": [
+    "pages/index/index"
+  ],
+  "window": {
+    "navigationBarBackgroundColor": "#000000",
+    "navigationBarTitleText": "吉他学习助手",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#000000",
+    "backgroundTextStyle": "light"
+  },
+  "requiredPrivateInfos": ["getLocation"],
+  "permission": {
+    "scope.record": {
+      "desc": "调音器需要使用麦克风来检测音高"
+    }
+  },
+  "sitemapLocation": "sitemap.json"
+}
